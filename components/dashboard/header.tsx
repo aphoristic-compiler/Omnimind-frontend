@@ -34,7 +34,7 @@ export function Header() {
 
     try {
       setIsSearching(true);
-      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || '';
       const response = await fetch(`${baseUrl}/api/dashboard/stats`);
       if (!response.ok) throw new Error('Search failed');
       const data = await response.json();
