@@ -26,10 +26,10 @@ export const api = {
   materials: {
     search: (query: string, limit?: number) =>
       fetchAPI(`/materials/search?query=${encodeURIComponent(query)}&limit=${limit || 5}`),
-    upload: (title: string, content: string) =>
-      fetchAPI('/materials', {
+      upload: (formData: FormData) =>
+      fetchAPI('/materials/upload', {
         method: 'POST',
-        body: JSON.stringify({ title, content }),
+        body: formData,
       }),
   },
 };
