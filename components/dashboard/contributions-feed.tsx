@@ -24,7 +24,9 @@ export function ContributionsFeed({ count, recent }: ContributionsFeedProps) {
       {/* Header */}
       <div className="mb-6">
         <div className="flex items-baseline gap-2">
-          <span className="text-4xl font-display text-primary font-semibold">{count}</span>
+          <span className="text-4xl font-display text-primary font-semibold">
+            {count} <span className="text-2xl text-muted-foreground/50">/ 10</span>
+          </span>
           <span className="text-sm text-muted-foreground">contributions</span>
         </div>
         <p className="text-xs text-muted-foreground mt-2">Total materials uploaded</p>

@@ -91,6 +91,14 @@ async def upload_materials(
     current_user: User = Depends(auth.get_current_user),
     db: Session = Depends(get_db)
 ):
+    # Enforce upload limit of 10 materials per user
+    current_count = db.query(Material).filter(Material.user_id == current_user.id).count()
+    if current_count + len(files) > 10:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Upload limit reached: You can only upload a maximum of 10 materials. You currently have {current_count}."
+        )
+
     # Parse user-provided tags (sent as JSON string from the frontend)
     user_tags = []
     if tags:
@@ -470,9 +478,9 @@ def search_materials(q: str, db: Session = Depends(get_db), current_user: User =
         use_semantic = False
 
     if use_semantic:
-        # Get semantic matches but ensure material embedding is not 0s
+        # Get semantic matches but ensure material embedding is not null
         materials = db.query(Material).filter(
-            func.array_length(Material.embedding, 1) > 0 # basic check, pgvector handles rest
+            Material.embedding.isnot(None)
         ).order_by(
             Material.embedding.cosine_distance(query_embedding)
         ).limit(10).all()
