@@ -39,7 +39,28 @@ export default function DashboardPage() {
     const fetchStats = async () => {
       try {
         setLoading(true);
-        const response = await fetch(`/api/dashboard/stats`);
+        
+        const token = localStorage.getItem('token');
+        if (!token) {
+          // Not logged in, redirect to login
+          window.location.href = '/login';
+          return;
+        }
+
+        const response = await fetch(`/api/dashboard/stats`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+        
+        if (response.status === 401) {
+          // Token expired or invalid, redirect to login
+          localStorage.removeItem('token');
+          localStorage.removeItem('username');
+          window.location.href = '/login';
+          return;
+        }
+        
         if (!response.ok) throw new Error('Failed to fetch stats');
         const data = await response.json();
         setStats(data);

@@ -29,22 +29,38 @@ export default function LoginPage() {
     try {
       setIsLoading(true);
       
-      if (username && password) {
-        localStorage.setItem('auth_token', btoa(`${username}:${password}`));
-        localStorage.setItem('username', username);
+      const endpoint = isSignUp ? '/api/auth/register' : '/api/auth/login';
+      
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          username: username.trim(), 
+          password: password.trim() 
+        }),
+      });
 
-        toast({
-          title: 'Welcome back!',
-          description: `Logged in as ${username}`,
-        });
+      const data = await response.json();
 
-        router.push('/dashboard');
+      if (!response.ok) {
+        throw new Error(data.detail || data.message || 'Authentication failed');
       }
+
+      // Save the JWT token from the backend
+      localStorage.setItem('token', data.access_token);
+      localStorage.setItem('username', username.trim());
+
+      toast({
+        title: isSignUp ? 'Account created!' : 'Welcome back!',
+        description: `${isSignUp ? 'Signed up' : 'Logged in'} as ${username}`,
+      });
+
+      router.push('/dashboard');
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Authentication failed';
       setError(message);
       toast({
-        title: 'Login Error',
+        title: isSignUp ? 'Sign Up Error' : 'Login Error',
         description: message,
         variant: 'destructive',
       });

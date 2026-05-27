@@ -4,12 +4,22 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Menu, X, LogOut, ChevronDown } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { BrowseBar } from "./browse-bar";
 
 export function FloatingNav() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [isBrowseOpen, setIsBrowseOpen] = useState(false);
+  const router = useRouter();
+
+  const handleSignOut = () => {
+    // Clear all auth data from localStorage
+    localStorage.removeItem('token');
+    localStorage.removeItem('username');
+    // Redirect to login page
+    router.push('/login');
+  };
 
   useEffect(() => {
     const handleScroll = () => {
@@ -83,6 +93,7 @@ export function FloatingNav() {
             <Button
               size="sm"
               variant="ghost"
+              onClick={handleSignOut}
               className={`text-foreground/70 hover:text-foreground transition-all duration-500 ${isScrolled ? "text-xs h-8" : "text-sm h-9"}`}
             >
               <LogOut className="w-4 h-4 mr-2" />
@@ -177,7 +188,10 @@ export function FloatingNav() {
           >
             <Button 
               className="flex-1 bg-foreground text-background rounded-full h-14 text-base"
-              onClick={() => setIsMobileMenuOpen(false)}
+              onClick={() => {
+                setIsMobileMenuOpen(false);
+                handleSignOut();
+              }}
             >
               <LogOut className="w-4 h-4 mr-2" />
               Sign out

@@ -21,7 +21,10 @@ export function Sidebar({ open, onToggle }: SidebarProps) {
   useEffect(() => {
     const checkApiStatus = async () => {
       try {
-        const response = await fetch(`/api/dashboard/stats`);
+        const token = localStorage.getItem('token');
+        const response = await fetch(`/api/dashboard/stats`, {
+          headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+        });
         setApiConnected(response.ok);
       } catch {
         setApiConnected(false);

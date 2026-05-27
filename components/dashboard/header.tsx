@@ -34,7 +34,10 @@ export function Header() {
 
     try {
       setIsSearching(true);
-      const response = await fetch(`/api/dashboard/stats`);
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/dashboard/stats`, {
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+      });
       if (!response.ok) throw new Error('Search failed');
       const data = await response.json();
       setSearchResults(data.results || []);

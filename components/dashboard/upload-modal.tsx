@@ -99,8 +99,17 @@ export function UploadModal({ open, onOpenChange }: UploadModalProps) {
         formData.append('tags', JSON.stringify(tags));
       }
 
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Not authenticated. Please log in again.');
+      }
+
       const response = await fetch(`/api/materials`, {
         method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          // Note: Do NOT set Content-Type for FormData - browser does it automatically
+        },
         body: formData,
       });
 
