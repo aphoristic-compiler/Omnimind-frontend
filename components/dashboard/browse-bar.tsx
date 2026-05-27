@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
 interface BrowseBarProps {
   open: boolean;
@@ -8,11 +9,13 @@ interface BrowseBarProps {
 }
 
 export function BrowseBar({ open, onOpenChange }: BrowseBarProps) {
+  const router = useRouter();
+  
   const browseItems = [
-    { label: 'Most Viewed', href: '#browse/most-viewed' },
-    { label: 'Trending', href: '#browse/trending' },
-    { label: 'All', href: '#browse/all' },
-    { label: 'My Contributions', href: '#browse/contributions' },
+    { label: 'Most Viewed', filter: 'most-viewed' },
+    { label: 'Trending', filter: 'trending' },
+    { label: 'All', filter: 'all' },
+    { label: 'My Contributions', filter: 'contributions' },
   ];
 
   useEffect(() => {
@@ -27,6 +30,11 @@ export function BrowseBar({ open, onOpenChange }: BrowseBarProps) {
       return () => window.removeEventListener('keydown', handleEscape);
     }
   }, [open, onOpenChange]);
+
+  const handleNavigation = (filter: string) => {
+    onOpenChange(false);
+    router.push(`/browse?filter=${filter}`);
+  };
 
   return (
     <>
@@ -56,19 +64,15 @@ export function BrowseBar({ open, onOpenChange }: BrowseBarProps) {
           {/* Navigation Items - Horizontal layout like landing nav */}
           <div className="flex items-center gap-1 px-6 py-4">
             {browseItems.map((item, index) => (
-              <a
+              <button
                 key={item.label}
-                href={item.href}
-                onClick={(e) => {
-                  e.preventDefault();
-                  onOpenChange(false);
-                }}
+                onClick={() => handleNavigation(item.filter)}
                 className="relative group px-5 py-2 text-sm text-foreground/70 hover:text-foreground transition-colors duration-300 animate-char-in"
                 style={{ animationDelay: `${index * 50}ms` }}
               >
                 {item.label}
                 <span className="absolute -bottom-1 left-0 w-0 h-px bg-foreground transition-all duration-300 group-hover:w-full" />
-              </a>
+              </button>
             ))}
           </div>
         </div>

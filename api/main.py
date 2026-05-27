@@ -98,6 +98,44 @@ def get_material(material_id: uuid.UUID, db: Session = Depends(get_db), current_
     return material
 
 # --- BROWSE & DASHBOARD ENDPOINTS ---
+@app.get("/api/materials", response_model=List[schemas.MaterialOut])
+def list_materials(
+    sort: str = "created_at",
+    order: str = "desc",
+    limit: int = 20,
+    skip: int = 0,
+    mine: str = None,
+    current_user: User = Depends(auth.get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Unified materials listing endpoint with filtering options.
+    - sort: 'created_at' or 'views'
+    - order: 'asc' or 'desc'
+    - limit: max number of results
+    - skip: pagination offset
+    - mine: if 'true', only return current user's materials
+    """
+    query = db.query(Material)
+    
+    # Filter by user if mine=true
+    if mine == 'true':
+        query = query.filter(Material.user_id == current_user.id)
+    
+    # Apply sorting
+    if sort == 'views':
+        if order == 'asc':
+            query = query.order_by(Material.views)
+        else:
+            query = query.order_by(desc(Material.views))
+    else:  # default to created_at
+        if order == 'asc':
+            query = query.order_by(Material.created_at)
+        else:
+            query = query.order_by(desc(Material.created_at))
+    
+    return query.offset(skip).limit(limit).all()
+
 @app.get("/api/materials/browse/most-viewed", response_model=List[schemas.MaterialOut])
 def get_most_viewed(db: Session = Depends(get_db)):
     return db.query(Material).order_by(desc(Material.views)).limit(10).all()
