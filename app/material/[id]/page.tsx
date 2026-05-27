@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { FloatingNav } from '@/components/dashboard/floating-nav';
-import { ArrowLeft, Download, Eye, Calendar, Tag, FileText } from 'lucide-react';
+import { ArrowLeft, Download, Eye, Calendar, Tag, FileText, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 
@@ -17,6 +17,7 @@ interface Material {
   created_at: string;
   category?: string;
   has_original_file?: boolean;
+  is_owner?: boolean;
 }
 
 export default function MaterialPage() {
@@ -31,6 +32,7 @@ export default function MaterialPage() {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<'preview' | 'text'>('preview');
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     return () => {
@@ -192,12 +194,54 @@ export default function MaterialPage() {
     }
   };
 
+  const handleDelete = async () => {
+    if (!material) return;
+    
+    // Confirm deletion
+    const confirmed = window.confirm("Are you sure you want to delete this material? This action cannot be undone.");
+    if (!confirmed) return;
+    
+    try {
+      setIsDeleting(true);
+      const token = localStorage.getItem('token');
+      if (!token) return;
+
+      const response = await fetch(`/api/materials/${id}`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => null);
+        throw new Error(data?.detail || 'Failed to delete material');
+      }
+
+      toast({
+        title: 'Material deleted',
+        description: `"${material.title}" has been removed.`,
+      });
+      
+      // Redirect to dashboard
+      router.push('/dashboard');
+      
+    } catch (err) {
+      toast({
+        title: 'Delete failed',
+        description: err instanceof Error ? err.message : 'Unknown error',
+        variant: 'destructive',
+      });
+      setIsDeleting(false);
+    }
+  };
+
   return (
     <main className="relative min-h-screen overflow-x-hidden noise-overlay bg-background">
       <FloatingNav />
 
       {/* Grid background */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-20">
+      <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-20" style={{ transform: 'translateZ(0)', willChange: 'transform' }}>
         {[...Array(8)].map((_, i) => (
           <div
             key={`h-${i}`}
@@ -215,15 +259,33 @@ export default function MaterialPage() {
       </div>
 
       <div className="relative z-10 max-w-[1200px] mx-auto px-6 lg:px-12 py-32">
-        {/* Back Button */}
-        <Button
-          variant="ghost"
-          onClick={() => router.push('/browse')}
-          className="mb-8 gap-2 text-muted-foreground hover:text-foreground"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Back to Browse
-        </Button>
+        {/* Top Bar */}
+        <div className="flex justify-between items-center mb-8">
+          <Button
+            variant="ghost"
+            onClick={() => router.push('/browse')}
+            className="gap-2 text-muted-foreground hover:text-foreground"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to Browse
+          </Button>
+
+          {material?.is_owner && (
+            <Button
+              variant="destructive"
+              onClick={handleDelete}
+              disabled={isDeleting}
+              className="gap-2 rounded-full px-6 transition-all duration-300 hover-lift animate-char-in"
+            >
+              {isDeleting ? (
+                <div className="w-4 h-4 rounded-full border-2 border-destructive-foreground border-t-transparent animate-spin" />
+              ) : (
+                <Trash2 className="w-4 h-4" />
+              )}
+              Delete
+            </Button>
+          )}
+        </div>
 
         {/* Loading State */}
         {loading && (

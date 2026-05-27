@@ -86,7 +86,7 @@ export default function DashboardPage() {
       <FloatingNav />
       
       {/* Grid background */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-20">
+      <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-20" style={{ transform: 'translateZ(0)', willChange: 'transform' }}>
         {[...Array(8)].map((_, i) => (
           <div
             key={`h-${i}`}

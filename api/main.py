@@ -155,7 +155,30 @@ def get_material(material_id: uuid.UUID, db: Session = Depends(get_db), current_
         "created_at": material.created_at.isoformat() if material.created_at else "",
         "category": category_name,
         "has_original_file": bool(material.file_data),
+        "is_owner": material.user_id == current_user.id,
     }
+
+@app.delete("/api/materials/{material_id}")
+def delete_material(material_id: str, db: Session = Depends(get_db), current_user: User = Depends(auth.get_current_user)):
+    try:
+        material_uuid = uuid.UUID(material_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid material ID format")
+        
+    material = db.query(Material).filter(Material.id == material_uuid).first()
+    if not material:
+        raise HTTPException(status_code=404, detail="Material not found")
+        
+    if material.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="You do not have permission to delete this material")
+        
+    # Manually cascade delete MaterialViews to prevent FK constraint errors
+    db.query(MaterialView).filter(MaterialView.material_id == material_uuid).delete(synchronize_session=False)
+    
+    db.delete(material)
+    db.commit()
+    
+    return {"message": "Material deleted successfully"}
 
 @app.get("/api/materials/{material_id}/download/original")
 def download_original_material(

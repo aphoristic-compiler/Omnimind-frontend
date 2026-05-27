@@ -11,6 +11,7 @@ import { FooterSection } from '@/components/landing/footer-section';
 export default function LandingPage() {
   return (
     <div className="min-h-screen bg-background">
+
       <Navigation />
       <HeroSection />
       <FeaturesSection />
