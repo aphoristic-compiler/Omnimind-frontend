@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Depends, HTTPException, UploadFile, File, Form, Response
 from sqlalchemy.orm import Session, defer
-from sqlalchemy import desc, func
+from sqlalchemy import desc, func, case
 from typing import List, Optional
 import uuid
 import json
@@ -116,7 +116,13 @@ async def upload_materials(
         if not extracted_text: continue
         
         ai_data = ai_service.analyze_content(file.filename, extracted_text)
-        embedding = ai_service.generate_embedding(extracted_text)
+        
+        # Combine rich metadata with content for advanced semantic search
+        tags_str = ", ".join(ai_data.get("tags", []))
+        summary_str = ai_data.get("summary", "")
+        advanced_semantic_text = f"Title: {file.filename}\nTags: {tags_str}\nSummary: {summary_str}\n\nContent: {extracted_text}"
+        
+        embedding = ai_service.generate_embedding(advanced_semantic_text)
         
         # Merge user-provided tags with AI-generated tags (user tags take priority, no duplicates)
         ai_tags = ai_data.get("tags", []) or []
@@ -493,6 +499,15 @@ def search_materials(q: str, db: Session = Depends(get_db), current_user: User =
                 (Material.content.ilike(f"%{term}%")) |
                 (Material.summary.ilike(f"%{term}%"))
             )
+            
+        # Sort so title matches are first, summary second, content third
+        order_expr = case(
+            (Material.title.ilike(f"%{q}%"), 1),
+            (Material.summary.ilike(f"%{q}%"), 2),
+            else_=3
+        )
+        text_query = text_query.order_by(order_expr)
+        
         text_matches = text_query.limit(5).all()
         
         # Merge results: Text/Title matches FIRST (higher priority), then semantic matches
@@ -512,6 +527,15 @@ def search_materials(q: str, db: Session = Depends(get_db), current_user: User =
                 (Material.content.ilike(f"%{term}%")) |
                 (Material.summary.ilike(f"%{term}%"))
             )
+            
+        # Sort exact title matches first
+        order_expr = case(
+            (Material.title.ilike(f"%{q}%"), 1),
+            (Material.summary.ilike(f"%{q}%"), 2),
+            else_=3
+        )
+        text_query = text_query.order_by(order_expr)
+        
         materials = text_query.limit(10).all()
     
     # Return serializable dicts (avoid exposing raw ORM with non-serializable Vector field)
