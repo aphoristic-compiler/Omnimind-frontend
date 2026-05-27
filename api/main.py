@@ -40,6 +40,16 @@ def seed_categories(db: Session):
 @app.on_event("startup")
 def startup_event():
     db = next(get_db())
+    # Auto-migrate existing database for new columns
+    try:
+        from sqlalchemy import text
+        db.execute(text("ALTER TABLE materials ADD COLUMN IF NOT EXISTS file_data BYTEA;"))
+        db.execute(text("ALTER TABLE materials ADD COLUMN IF NOT EXISTS file_type VARCHAR(50);"))
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        print("Schema migration failed or ignored:", e)
+        
     seed_categories(db)
 
 # --- AUTH ENDPOINTS ---
