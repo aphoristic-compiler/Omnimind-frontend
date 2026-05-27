@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends, HTTPException, UploadFile, File, Form
+from fastapi import FastAPI, Depends, HTTPException, UploadFile, File, Form, Response
 from sqlalchemy.orm import Session
 from sqlalchemy import desc, func
 from typing import List, Optional
@@ -20,7 +20,17 @@ def seed_categories(db: Session):
         {"name": "AI & Machine Learning", "slug": "ai-machine-learning", "color_code": "#FF5733"},
         {"name": "Data Science", "slug": "data-science", "color_code": "#33FF57"},
         {"name": "Software Engineering", "slug": "software-engineering", "color_code": "#3357FF"},
-        {"name": "General", "slug": "general", "color_code": "#888888"}
+        {"name": "Mathematics", "slug": "mathematics", "color_code": "#A855F7"},
+        {"name": "Physics", "slug": "physics", "color_code": "#06B6D4"},
+        {"name": "Chemistry", "slug": "chemistry", "color_code": "#10B981"},
+        {"name": "Biology", "slug": "biology", "color_code": "#84CC16"},
+        {"name": "Engineering", "slug": "engineering", "color_code": "#F59E0B"},
+        {"name": "Business", "slug": "business", "color_code": "#EC4899"},
+        {"name": "Literature & Arts", "slug": "literature-arts", "color_code": "#F97316"},
+        {"name": "History & Social Sciences", "slug": "history-social-sciences", "color_code": "#64748B"},
+        {"name": "Medicine & Health", "slug": "medicine-health", "color_code": "#EF4444"},
+        {"name": "Economics", "slug": "economics", "color_code": "#0EA5E9"},
+        {"name": "General", "slug": "general", "color_code": "#888888"},
     ]
     for c in cats:
         if not db.query(Category).filter(Category.slug == c["slug"]).first():
@@ -99,7 +109,8 @@ async def upload_materials(
 
         new_material = Material(
             user_id=current_user.id, category_id=cat_id, title=file.filename,
-            content=extracted_text, summary=ai_data["summary"], tags=merged_tags, embedding=embedding
+            content=extracted_text, summary=ai_data["summary"], tags=merged_tags, 
+            embedding=embedding, file_data=contents, file_type=file.content_type
         )
         db.add(new_material)
         db.commit()
@@ -133,7 +144,19 @@ def get_material(material_id: uuid.UUID, db: Session = Depends(get_db), current_
         "views": material.views,
         "created_at": material.created_at.isoformat() if material.created_at else "",
         "category": category_name,
+        "has_original_file": bool(material.file_data),
     }
+
+@app.get("/api/materials/{material_id}/download/original")
+def download_original_material(material_id: uuid.UUID, db: Session = Depends(get_db), current_user: User = Depends(auth.get_current_user)):
+    material = db.query(Material).filter(Material.id == material_id).first()
+    if not material or not material.file_data:
+        raise HTTPException(status_code=404, detail="Original file not found")
+    
+    headers = {
+        'Content-Disposition': f'attachment; filename="{material.title}"'
+    }
+    return Response(content=material.file_data, media_type=material.file_type or "application/octet-stream", headers=headers)
 
 # --- BROWSE & DASHBOARD ENDPOINTS ---
 @app.get("/api/materials", response_model=List[schemas.MaterialOut])
@@ -257,6 +280,7 @@ def generate_for_you_topics(db: Session, current_user: User) -> list:
         Category.name,
         func.sum(Material.views).label('total_views')
     ).join(Material, Material.category_id == Category.id
+    ).filter(Category.name != "General"
     ).group_by(Category.name
     ).order_by(desc('total_views')
     ).first()
@@ -386,19 +410,51 @@ def search_materials(q: str, db: Session = Depends(get_db), current_user: User =
     db.add(search_entry)
     db.commit()
     
+    materials = []
+    use_semantic = True
+    
+    # Check if we should fallback to text search (if API key missing or query embedding is 0s)
     try:
         query_embedding = ai_service.generate_embedding(q)
-        materials = db.query(Material).order_by(
+        if sum(abs(v) for v in query_embedding) == 0.0:
+            use_semantic = False
+    except Exception:
+        use_semantic = False
+
+    if use_semantic:
+        # Get semantic matches but ensure material embedding is not 0s
+        materials = db.query(Material).filter(
+            func.array_length(Material.embedding, 1) > 0 # basic check, pgvector handles rest
+        ).order_by(
             Material.embedding.cosine_distance(query_embedding)
         ).limit(10).all()
-    except Exception:
-        # Fallback: text-based search if embedding fails
-        search_term = f"%{q}%"
-        materials = db.query(Material).filter(
-            (Material.title.ilike(search_term)) | 
-            (Material.content.ilike(search_term)) |
-            (Material.summary.ilike(search_term))
-        ).limit(10).all()
+        # Also include some exact text matches just in case semantic search missed typos
+        search_terms = q.split()
+        text_query = db.query(Material)
+        for term in search_terms:
+            text_query = text_query.filter(
+                (Material.title.ilike(f"%{term}%")) | 
+                (Material.content.ilike(f"%{term}%")) |
+                (Material.summary.ilike(f"%{term}%"))
+            )
+        text_matches = text_query.limit(5).all()
+        
+        # Merge results, keeping semantic first but avoiding duplicates
+        seen_ids = {m.id for m in materials}
+        for tm in text_matches:
+            if tm.id not in seen_ids:
+                materials.append(tm)
+    else:
+        # Fallback: robust text-based search ensuring all words match
+        search_terms = q.split()
+        text_query = db.query(Material)
+        for term in search_terms:
+            text_query = text_query.filter(
+                (Material.title.ilike(f"%{term}%")) | 
+                (Material.content.ilike(f"%{term}%")) |
+                (Material.summary.ilike(f"%{term}%"))
+            )
+        materials = text_query.limit(10).all()
     
     # Return serializable dicts (avoid exposing raw ORM with non-serializable Vector field)
     return [

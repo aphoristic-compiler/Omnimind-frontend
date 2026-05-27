@@ -16,6 +16,7 @@ interface Material {
   views: number;
   created_at: string;
   category?: string;
+  has_original_file?: boolean;
 }
 
 export default function MaterialPage() {
@@ -101,8 +102,53 @@ export default function MaterialPage() {
 
     toast({
       title: 'Download started',
-      description: `Downloading "${material.title}"`,
+      description: `Downloading "${material.title}" as text`,
     });
+  };
+
+  const handleDownloadOriginal = async () => {
+    if (!material) return;
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+
+      toast({
+        title: 'Download started',
+        description: `Downloading original file for "${material.title}"`,
+      });
+
+      const response = await fetch(`/api/materials/${id}/download/original`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) throw new Error('Failed to download original file');
+
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      
+      const contentDisposition = response.headers.get('content-disposition');
+      let filename = material.title;
+      if (contentDisposition) {
+        const match = contentDisposition.match(/filename="?([^"]+)"?/);
+        if (match && match[1]) filename = match[1];
+      }
+      
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      toast({
+        title: 'Download failed',
+        description: err instanceof Error ? err.message : 'Unknown error',
+        variant: 'destructive',
+      });
+    }
   };
 
   return (
@@ -205,14 +251,26 @@ export default function MaterialPage() {
                   </div>
                 </div>
 
-                {/* Download Button */}
-                <Button
-                  onClick={handleDownload}
-                  className="gap-2 bg-foreground hover:bg-foreground/90 text-background rounded-full h-11 px-6 flex-shrink-0"
-                >
-                  <Download className="w-4 h-4" />
-                  Download
-                </Button>
+                {/* Download Buttons */}
+                <div className="flex flex-col sm:flex-row gap-3 flex-shrink-0">
+                  {material.has_original_file && (
+                    <Button
+                      onClick={handleDownloadOriginal}
+                      className="gap-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-full h-11 px-6 shadow-lg shadow-primary/25"
+                    >
+                      <Download className="w-4 h-4" />
+                      Original File
+                    </Button>
+                  )}
+                  <Button
+                    onClick={handleDownload}
+                    variant={material.has_original_file ? "outline" : "default"}
+                    className={`gap-2 rounded-full h-11 px-6 ${!material.has_original_file ? 'bg-foreground hover:bg-foreground/90 text-background' : ''}`}
+                  >
+                    <FileText className="w-4 h-4" />
+                    As Text
+                  </Button>
+                </div>
               </div>
             </div>
 
@@ -240,19 +298,30 @@ export default function MaterialPage() {
                   </pre>
                 </div>
 
-                {/* Download footer */}
-                <div className="mt-6 pt-6 border-t border-border flex items-center justify-between">
+                <div className="mt-6 pt-6 border-t border-border flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <p className="text-sm text-muted-foreground">
                     Want to keep this for offline reading?
                   </p>
-                  <Button
-                    variant="outline"
-                    onClick={handleDownload}
-                    className="gap-2 rounded-full"
-                  >
-                    <Download className="w-4 h-4" />
-                    Download as text
-                  </Button>
+                  <div className="flex flex-wrap items-center gap-3">
+                    {material.has_original_file && (
+                      <Button
+                        variant="outline"
+                        onClick={handleDownloadOriginal}
+                        className="gap-2 rounded-full border-primary/20 hover:bg-primary/5 text-primary"
+                      >
+                        <Download className="w-4 h-4" />
+                        Original File
+                      </Button>
+                    )}
+                    <Button
+                      variant="outline"
+                      onClick={handleDownload}
+                      className="gap-2 rounded-full"
+                    >
+                      <FileText className="w-4 h-4" />
+                      As Text
+                    </Button>
+                  </div>
                 </div>
               </div>
             )}

@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime
-from sqlalchemy import Column, String, Text, Integer, ForeignKey, DateTime, ARRAY
+from sqlalchemy import Column, String, Text, Integer, ForeignKey, DateTime, ARRAY, LargeBinary
 from sqlalchemy.dialects.postgresql import UUID
 from pgvector.sqlalchemy import Vector
 from .database import Base
@@ -31,7 +31,9 @@ class Material(Base):
     summary = Column(Text, nullable=True)
     tags = Column(ARRAY(String), default=list)
     views = Column(Integer, default=0)
-    embedding = Column(Vector(768)) # 768 dimensions for Gemini text-embedding-004
+    embedding = Column(Vector(768))
+    file_data = Column(LargeBinary, nullable=True)   # original file bytes
+    file_type = Column(String(50), nullable=True)     # e.g. 'application/pdf'
     created_at = Column(DateTime, default=datetime.utcnow)
 
 class MaterialView(Base):
