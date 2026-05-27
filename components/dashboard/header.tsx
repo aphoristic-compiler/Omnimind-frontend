@@ -139,7 +139,7 @@ export function Header() {
 
               {/* Search Results Dropdown */}
               {showResults && searchResults.length > 0 && (
-                <div className="absolute top-full left-0 right-0 mt-2 bg-card/95 backdrop-blur-xl border border-border rounded-lg shadow-2xl z-50 overflow-hidden">
+                <div className="absolute top-full left-0 right-0 mt-2 bg-card border border-border rounded-lg shadow-2xl z-50 overflow-hidden">
                   <div className="p-2">
                     <p className="text-xs text-muted-foreground px-3 py-1 mb-1">
                       {searchResults.length} result{searchResults.length !== 1 ? 's' : ''} found
@@ -172,7 +172,7 @@ export function Header() {
 
               {/* No results state */}
               {showResults && searchResults.length === 0 && !isSearching && searchQuery.trim() && (
-                <div className="absolute top-full left-0 right-0 mt-2 bg-card/95 backdrop-blur-xl border border-border rounded-lg shadow-2xl z-50 p-4 text-center">
+                <div className="absolute top-full left-0 right-0 mt-2 bg-card border border-border rounded-lg shadow-2xl z-50 p-4 text-center">
                   <p className="text-sm text-muted-foreground">No results found for &quot;{searchQuery}&quot;</p>
                 </div>
               )}

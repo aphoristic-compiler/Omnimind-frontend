@@ -158,15 +158,24 @@ def get_material(material_id: uuid.UUID, db: Session = Depends(get_db), current_
     }
 
 @app.get("/api/materials/{material_id}/download/original")
-def download_original_material(material_id: uuid.UUID, db: Session = Depends(get_db), current_user: User = Depends(auth.get_current_user)):
+def download_original_material(
+    material_id: str, 
+    inline: bool = False,
+    db: Session = Depends(get_db), 
+    current_user: User = Depends(auth.get_current_user)
+):
     material = db.query(Material).filter(Material.id == material_id).first()
     if not material or not material.file_data:
         raise HTTPException(status_code=404, detail="Original file not found")
     
-    headers = {
-        'Content-Disposition': f'attachment; filename="{material.title}"'
-    }
-    return Response(content=material.file_data, media_type=material.file_type or "application/octet-stream", headers=headers)
+    content_type = material.file_type or "application/octet-stream"
+    disposition = "inline" if inline else "attachment"
+    
+    return Response(
+        content=material.file_data,
+        media_type=content_type,
+        headers={"Content-Disposition": f'{disposition}; filename="{material.title}.{content_type.split("/")[-1] if "/" in content_type else "bin"}"'}
+    )
 
 # --- BROWSE & DASHBOARD ENDPOINTS ---
 @app.get("/api/materials", response_model=List[schemas.MaterialOut])

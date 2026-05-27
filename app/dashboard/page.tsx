@@ -111,7 +111,7 @@ export default function DashboardPage() {
         ))}
       </div>
 
-      <div className="relative z-10 max-w-[1600px] mx-auto px-6 lg:px-12 py-32 lg:py-40">
+      <div className="relative z-30 max-w-[1600px] mx-auto px-6 lg:px-12 py-32 lg:py-40">
         {/* Eyebrow */}
         <div className="mb-8 animate-char-in">
           <span className="inline-flex items-center gap-3 text-sm font-mono text-muted-foreground">

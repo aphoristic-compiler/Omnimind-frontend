@@ -28,6 +28,47 @@ export default function MaterialPage() {
   const [material, setMaterial] = useState<Material | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState<'preview' | 'text'>('preview');
+
+  useEffect(() => {
+    return () => {
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+      }
+    };
+  }, [previewUrl]);
+
+  useEffect(() => {
+    const fetchPreview = async () => {
+      if (!material?.has_original_file || previewUrl) return;
+      
+      try {
+        setPreviewLoading(true);
+        const token = localStorage.getItem('token');
+        if (!token) return;
+
+        const response = await fetch(`/api/materials/${id}/download/original?inline=true`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        if (!response.ok) throw new Error('Failed to fetch preview');
+        
+        const blob = await response.blob();
+        const url = URL.createObjectURL(blob);
+        setPreviewUrl(url);
+      } catch (err) {
+        console.error("Preview fetch error:", err);
+      } finally {
+        setPreviewLoading(false);
+      }
+    };
+
+    if (material && activeTab === 'preview') {
+      fetchPreview();
+    }
+  }, [material, id, activeTab, previewUrl]);
 
   useEffect(() => {
     const fetchMaterial = async () => {
@@ -285,17 +326,72 @@ export default function MaterialPage() {
               </div>
             )}
 
-            {/* Full Content */}
-            {material.content && (
+            {/* Full Content / Preview */}
+            {(material.content || material.has_original_file) && (
               <div className="bg-card border border-border rounded-2xl p-8 animate-char-in" style={{ animationDelay: '200ms' }}>
-                <div className="flex items-center gap-2 mb-6">
-                  <FileText className="w-5 h-5 text-muted-foreground" />
-                  <h2 className="text-lg font-semibold text-card-foreground">Content</h2>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                  <div className="flex items-center gap-2">
+                    <FileText className="w-5 h-5 text-muted-foreground" />
+                    <h2 className="text-lg font-semibold text-card-foreground">Content Preview</h2>
+                  </div>
+                  
+                  {/* Tabs */}
+                  {material.has_original_file && material.content && (
+                    <div className="flex items-center bg-secondary/30 p-1 rounded-lg border border-border/50">
+                      <button
+                        onClick={() => setActiveTab('preview')}
+                        className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all ${
+                          activeTab === 'preview' 
+                            ? 'bg-card text-card-foreground shadow-sm' 
+                            : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50'
+                        }`}
+                      >
+                        Original Document
+                      </button>
+                      <button
+                        onClick={() => setActiveTab('text')}
+                        className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all ${
+                          activeTab === 'text' 
+                            ? 'bg-card text-card-foreground shadow-sm' 
+                            : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50'
+                        }`}
+                      >
+                        Extracted Text
+                      </button>
+                    </div>
+                  )}
                 </div>
+
                 <div className="prose prose-sm max-w-none">
-                  <pre className="whitespace-pre-wrap font-sans text-card-foreground/80 leading-relaxed text-sm bg-secondary/30 rounded-lg p-6 overflow-auto max-h-[600px] border border-border/50">
-                    {material.content}
-                  </pre>
+                  {/* Original Document Preview */}
+                  {activeTab === 'preview' && material.has_original_file && (
+                    <div className="bg-secondary/30 rounded-lg overflow-hidden border border-border/50 w-full h-[800px] relative">
+                      {previewLoading && (
+                        <div className="absolute inset-0 flex flex-col items-center justify-center bg-card/50 backdrop-blur-sm z-10">
+                          <div className="w-8 h-8 rounded-full border-2 border-border border-t-primary animate-spin mb-4" />
+                          <p className="text-sm text-muted-foreground">Loading preview...</p>
+                        </div>
+                      )}
+                      {previewUrl ? (
+                        <iframe 
+                          src={previewUrl} 
+                          className="w-full h-full border-0" 
+                          title={`Preview of ${material.title}`}
+                        />
+                      ) : !previewLoading && (
+                        <div className="absolute inset-0 flex items-center justify-center text-muted-foreground text-sm">
+                          Preview not available
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Extracted Text View */}
+                  {(activeTab === 'text' || !material.has_original_file) && material.content && (
+                    <pre className="whitespace-pre-wrap font-sans text-card-foreground/80 leading-relaxed text-sm bg-secondary/30 rounded-lg p-6 overflow-auto max-h-[800px] border border-border/50">
+                      {material.content}
+                    </pre>
+                  )}
                 </div>
 
                 <div className="mt-6 pt-6 border-t border-border flex flex-col sm:flex-row sm:items-center justify-between gap-4">
