@@ -30,16 +30,15 @@ export function FloatingNav() {
   }, []);
 
   const navItems = [
-    { label: "Dashboard", href: "#dashboard" },
-    { label: "Browse", href: "#browse", hasDropdown: true },
-    { label: "Settings", href: "#settings" },
+    { label: "Dashboard", href: "/dashboard" },
+    { label: "Browse", href: "/browse", hasDropdown: true },
   ];
 
   const browseItems = [
-    { label: "Most Viewed", href: "#browse/most-viewed" },
-    { label: "Trending", href: "#browse/trending" },
-    { label: "All", href: "#browse/all" },
-    { label: "My Contributions", href: "#browse/contributions" },
+    { label: "Most Viewed", href: "/browse?filter=most-viewed" },
+    { label: "Trending", href: "/browse?filter=trending" },
+    { label: "All", href: "/browse?filter=all" },
+    { label: "My Contributions", href: "/browse?filter=contributions" },
   ];
 
   const [expandedMenu, setExpandedMenu] = useState<string | null>(null);
@@ -75,7 +74,13 @@ export function FloatingNav() {
             {navItems.map((item) => (
               <div key={item.label} className="relative group">
                 <button
-                  onClick={() => item.hasDropdown && setIsBrowseOpen(!isBrowseOpen)}
+                  onClick={() => {
+                    if (item.hasDropdown) {
+                      setIsBrowseOpen(!isBrowseOpen);
+                    } else {
+                      router.push(item.href);
+                    }
+                  }}
                   className="text-sm text-foreground/70 hover:text-foreground transition-colors duration-300 relative flex items-center gap-1 group/nav"
                 >
                   {item.label}
@@ -143,9 +148,11 @@ export function FloatingNav() {
                     <ChevronDown className={`w-6 h-6 transition-transform duration-300 ${expandedMenu === item.label ? 'rotate-180' : ''}`} />
                   </button>
                 ) : (
-                  <a
-                    href={item.href}
-                    onClick={() => setIsMobileMenuOpen(false)}
+                  <button
+                    onClick={() => {
+                      setIsMobileMenuOpen(false);
+                      router.push(item.href);
+                    }}
                     className={`text-4xl font-display text-foreground hover:text-muted-foreground transition-all duration-500 block ${
                       isMobileMenuOpen 
                         ? "opacity-100 translate-y-0" 
@@ -154,7 +161,7 @@ export function FloatingNav() {
                     style={{ transitionDelay: isMobileMenuOpen ? `${i * 75}ms` : "0ms" }}
                   >
                     {item.label}
-                  </a>
+                  </button>
                 )}
 
                 {/* Mobile Submenu */}

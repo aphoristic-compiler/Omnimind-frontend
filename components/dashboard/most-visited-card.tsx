@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { ChevronDown } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 interface RecentItem {
   id: string;
@@ -26,6 +27,7 @@ export function MostVisitedCard({
   items,
 }: MostVisitedCardProps) {
   const [expanded, setExpanded] = useState(false);
+  const router = useRouter();
 
   return (
     <div className="bg-card/50 backdrop-blur border border-border/50 rounded-2xl overflow-hidden hover-lift transition-all duration-500 h-full flex flex-col hover:border-foreground/20">
@@ -77,7 +79,11 @@ export function MostVisitedCard({
           <div className="flex-1 overflow-auto">
             <div className="divide-y divide-border">
               {items.map((item) => (
-                <div key={item.id} className="p-4 hover:bg-secondary/20 transition-colors cursor-pointer group">
+                <div
+                  key={item.id}
+                  className="p-4 hover:bg-secondary/20 transition-colors cursor-pointer group"
+                  onClick={() => router.push(`/material/${item.id}`)}
+                >
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex-1">
                       <p className="font-medium text-card-foreground group-hover:text-primary transition-colors line-clamp-2">

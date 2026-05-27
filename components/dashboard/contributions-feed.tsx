@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { FileText, ArrowUpRight } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 interface RecentItem {
   id: string;
@@ -16,6 +17,8 @@ interface ContributionsFeedProps {
 }
 
 export function ContributionsFeed({ count, recent }: ContributionsFeedProps) {
+  const router = useRouter();
+
   return (
     <div className="bg-card border border-border rounded-lg p-6 h-full hover-lift transition-all duration-300 flex flex-col">
       {/* Header */}
@@ -36,6 +39,7 @@ export function ContributionsFeed({ count, recent }: ContributionsFeedProps) {
               <div
                 key={item.id}
                 className="flex items-start gap-3 p-3 rounded-lg hover:bg-secondary/30 transition-colors cursor-pointer group"
+                onClick={() => router.push(`/material/${item.id}`)}
               >
                 <FileText className="w-4 h-4 text-primary/60 group-hover:text-primary flex-shrink-0 mt-0.5 transition-colors" />
                 <div className="flex-1 min-w-0">
@@ -58,7 +62,10 @@ export function ContributionsFeed({ count, recent }: ContributionsFeedProps) {
 
       {/* View All Link */}
       {recent.length > 0 && (
-        <button className="mt-4 flex items-center justify-center gap-2 w-full py-2 px-3 rounded-lg text-sm font-medium text-primary hover:bg-secondary/50 transition-colors border border-border/50 hover:border-primary/30 group">
+        <button
+          onClick={() => router.push('/browse?filter=contributions')}
+          className="mt-4 flex items-center justify-center gap-2 w-full py-2 px-3 rounded-lg text-sm font-medium text-primary hover:bg-secondary/50 transition-colors border border-border/50 hover:border-primary/30 group"
+        >
           View All
           <ArrowUpRight className="w-3 h-3 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
         </button>

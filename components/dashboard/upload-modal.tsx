@@ -94,16 +94,13 @@ export function UploadModal({ open, onOpenChange }: UploadModalProps) {
         formData.append('files', filePreview.file);
       });
       
-      if (tags.length > 0) {
-        formData.append('tags', JSON.stringify(tags));
-      }
+      // Always send tags (even if empty) so backend correctly handles them
+      formData.append('tags', JSON.stringify(tags));
 
       const token = localStorage.getItem('token');
       if (!token) {
         throw new Error('Not authenticated. Please log in again.');
       }
-
-      console.log('[v0] Starting upload with', files.length, 'files');
       
       const response = await fetch('/api/materials', {
         method: 'POST',
@@ -113,10 +110,7 @@ export function UploadModal({ open, onOpenChange }: UploadModalProps) {
         body: formData,
       });
 
-      console.log('[v0] Upload response status:', response.status);
-
       const responseText = await response.text();
-      console.log('[v0] Upload response body:', responseText);
 
       if (!response.ok) {
         let errorMessage = 'Upload failed';
@@ -129,11 +123,9 @@ export function UploadModal({ open, onOpenChange }: UploadModalProps) {
         throw new Error(errorMessage);
       }
 
-      const data = JSON.parse(responseText);
-
       toast({
         title: 'Materials Uploaded Successfully!',
-        description: `${files.length} file(s) processed • Tags: ${tags.length > 0 ? tags.join(', ') : 'None'}`,
+        description: `${files.length} file(s) processed${tags.length > 0 ? ` • Tags: ${tags.join(', ')}` : ''}`,
       });
 
       setFiles([]);
@@ -143,6 +135,7 @@ export function UploadModal({ open, onOpenChange }: UploadModalProps) {
       
       // Refresh the page to show new materials
       window.location.reload();
+
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Upload failed';
       console.error('[v0] Upload error:', error);

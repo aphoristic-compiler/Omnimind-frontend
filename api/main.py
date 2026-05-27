@@ -1,8 +1,9 @@
-from fastapi import FastAPI, Depends, HTTPException, UploadFile, File
+from fastapi import FastAPI, Depends, HTTPException, UploadFile, File, Form
 from sqlalchemy.orm import Session
 from sqlalchemy import desc, func
-from typing import List
+from typing import List, Optional
 import uuid
+import json
 
 from .database import engine, get_db, Base
 from .models import User, Category, Material, MaterialView, SearchHistory
@@ -64,7 +65,22 @@ def get_user(current_user: User = Depends(auth.get_current_user)):
 
 # --- MATERIAL & UPLOAD ENDPOINTS ---
 @app.post("/api/materials")
-async def upload_materials(files: List[UploadFile] = File(...), current_user: User = Depends(auth.get_current_user), db: Session = Depends(get_db)):
+async def upload_materials(
+    files: List[UploadFile] = File(...),
+    tags: Optional[str] = Form(None),
+    current_user: User = Depends(auth.get_current_user),
+    db: Session = Depends(get_db)
+):
+    # Parse user-provided tags (sent as JSON string from the frontend)
+    user_tags = []
+    if tags:
+        try:
+            parsed = json.loads(tags)
+            if isinstance(parsed, list):
+                user_tags = [str(t).strip() for t in parsed if str(t).strip()]
+        except (json.JSONDecodeError, TypeError):
+            pass
+
     results = []
     for file in files:
         contents = await file.read()
@@ -74,12 +90,16 @@ async def upload_materials(files: List[UploadFile] = File(...), current_user: Us
         ai_data = ai_service.analyze_content(file.filename, extracted_text)
         embedding = ai_service.generate_embedding(extracted_text)
         
+        # Merge user-provided tags with AI-generated tags (user tags take priority, no duplicates)
+        ai_tags = ai_data.get("tags", []) or []
+        merged_tags = list(dict.fromkeys(user_tags + ai_tags))  # preserves order, removes dupes
+        
         category = db.query(Category).filter(Category.slug == ai_data["category_slug"]).first()
         cat_id = category.id if category else None
 
         new_material = Material(
             user_id=current_user.id, category_id=cat_id, title=file.filename,
-            content=extracted_text, summary=ai_data["summary"], tags=ai_data["tags"], embedding=embedding
+            content=extracted_text, summary=ai_data["summary"], tags=merged_tags, embedding=embedding
         )
         db.add(new_material)
         db.commit()
@@ -95,7 +115,25 @@ def get_material(material_id: uuid.UUID, db: Session = Depends(get_db), current_
     material.views += 1
     db.add(MaterialView(material_id=material_id, user_id=current_user.id))
     db.commit()
-    return material
+    db.refresh(material)
+
+    # Resolve category name
+    category_name = "General"
+    if material.category_id:
+        cat = db.query(Category).filter(Category.id == material.category_id).first()
+        if cat:
+            category_name = cat.name
+
+    return {
+        "id": str(material.id),
+        "title": material.title,
+        "content": material.content,
+        "summary": material.summary or "",
+        "tags": material.tags or [],
+        "views": material.views,
+        "created_at": material.created_at.isoformat() if material.created_at else "",
+        "category": category_name,
+    }
 
 # --- BROWSE & DASHBOARD ENDPOINTS ---
 @app.get("/api/materials", response_model=List[schemas.MaterialOut])
@@ -348,5 +386,29 @@ def search_materials(q: str, db: Session = Depends(get_db), current_user: User =
     db.add(search_entry)
     db.commit()
     
-    query_embedding = ai_service.generate_embedding(q)
-    return db.query(Material).order_by(Material.embedding.cosine_distance(query_embedding)).limit(10).all()
+    try:
+        query_embedding = ai_service.generate_embedding(q)
+        materials = db.query(Material).order_by(
+            Material.embedding.cosine_distance(query_embedding)
+        ).limit(10).all()
+    except Exception:
+        # Fallback: text-based search if embedding fails
+        search_term = f"%{q}%"
+        materials = db.query(Material).filter(
+            (Material.title.ilike(search_term)) | 
+            (Material.content.ilike(search_term)) |
+            (Material.summary.ilike(search_term))
+        ).limit(10).all()
+    
+    # Return serializable dicts (avoid exposing raw ORM with non-serializable Vector field)
+    return [
+        {
+            "id": str(m.id),
+            "title": m.title,
+            "summary": m.summary or "",
+            "tags": m.tags or [],
+            "views": m.views,
+            "created_at": m.created_at.isoformat() if m.created_at else "",
+        }
+        for m in materials
+    ]

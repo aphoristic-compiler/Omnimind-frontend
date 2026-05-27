@@ -123,9 +123,8 @@ export default function UploadPage() {
         formData.append('files', filePreview.file);
       });
       
-      if (tags.length > 0) {
-        formData.append('tags', JSON.stringify(tags));
-      }
+      // Always send tags (even empty array) so backend stores them
+      formData.append('tags', JSON.stringify(tags));
 
       const token = localStorage.getItem('token');
       if (!token) {
@@ -155,7 +154,7 @@ export default function UploadPage() {
 
       toast({
         title: 'Materials Uploaded Successfully!',
-        description: `${files.length} file(s) processed`,
+        description: `${files.length} file(s) processed${tags.length > 0 ? ` • Tags: ${tags.join(', ')}` : ''}`,
       });
 
       // Redirect to dashboard after successful upload
