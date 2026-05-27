@@ -117,16 +117,12 @@ export function HeroSection() {
               isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
             }`}
           >
-            <a 
-              href="/dashboard"
-              className="bg-foreground hover:bg-foreground/90 text-background px-8 h-14 text-base rounded-full group inline-flex items-center"
-            >
-              Start exploring
-              <ArrowRight className="w-4 h-4 ml-2 transition-transform group-hover:translate-x-1" />
-            </a>
             <Button 
               size="lg" 
               variant="outline" 
+              onClick={() => {
+                document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' });
+              }}
               className="h-14 px-8 text-base rounded-full border-foreground/20 hover:bg-foreground/5"
             >
               Learn more

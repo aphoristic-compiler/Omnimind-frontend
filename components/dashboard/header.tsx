@@ -12,7 +12,16 @@ export function Header() {
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [showResults, setShowResults] = useState(false);
+  const [username, setUsername] = useState<string>('');
   const { toast } = useToast();
+
+  React.useEffect(() => {
+    // Get username from localStorage (set during login)
+    const storedUsername = localStorage.getItem('username');
+    if (storedUsername) {
+      setUsername(storedUsername);
+    }
+  }, []);
 
   const handleSearch = async (value: string) => {
     setSearchQuery(value);
@@ -47,7 +56,7 @@ export function Header() {
     <>
       <div className="mb-16 animate-char-in" style={{ animationDelay: '200ms' }}>
         <h1 className="text-[clamp(2rem,8vw,5rem)] font-display leading-[0.95] tracking-tight mb-4">
-          Welcome back
+          Welcome back{username && <span className="text-primary">, {username}</span>}
         </h1>
         <p className="text-lg text-muted-foreground max-w-2xl">
           Upload materials, explore insights, and collaborate with your team.

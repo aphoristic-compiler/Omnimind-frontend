@@ -2,12 +2,14 @@
 
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Menu, X, LogOut } from "lucide-react";
+import { Menu, X, LogOut, ChevronDown } from "lucide-react";
 import Link from "next/link";
+import { BrowseBar } from "./browse-bar";
 
 export function FloatingNav() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [isBrowseOpen, setIsBrowseOpen] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -19,9 +21,18 @@ export function FloatingNav() {
 
   const navItems = [
     { label: "Dashboard", href: "#dashboard" },
-    { label: "Browse", href: "#browse" },
+    { label: "Browse", href: "#browse", hasDropdown: true },
     { label: "Settings", href: "#settings" },
   ];
+
+  const browseItems = [
+    { label: "Most Viewed", href: "#browse/most-viewed" },
+    { label: "Trending", href: "#browse/trending" },
+    { label: "All", href: "#browse/all" },
+    { label: "My Contributions", href: "#browse/contributions" },
+  ];
+
+  const [expandedMenu, setExpandedMenu] = useState<string | null>(null);
 
   return (
     <header
@@ -52,14 +63,18 @@ export function FloatingNav() {
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-12">
             {navItems.map((item) => (
-              <a
-                key={item.label}
-                href={item.href}
-                className="text-sm text-foreground/70 hover:text-foreground transition-colors duration-300 relative group"
-              >
-                {item.label}
-                <span className="absolute -bottom-1 left-0 w-0 h-px bg-foreground transition-all duration-300 group-hover:w-full" />
-              </a>
+              <div key={item.label} className="relative group">
+                <button
+                  onClick={() => item.hasDropdown && setIsBrowseOpen(!isBrowseOpen)}
+                  className="text-sm text-foreground/70 hover:text-foreground transition-colors duration-300 relative flex items-center gap-1 group/nav"
+                >
+                  {item.label}
+                  {item.hasDropdown && (
+                    <ChevronDown className="w-4 h-4 transition-transform duration-300 group-hover/nav:rotate-180" />
+                  )}
+                  <span className="absolute -bottom-1 left-0 w-0 h-px bg-foreground transition-all duration-300 group-hover/nav:w-full" />
+                </button>
+              </div>
             ))}
           </div>
 
@@ -99,22 +114,57 @@ export function FloatingNav() {
         }`}
         style={{ top: 0 }}
       >
-        <div className="flex flex-col h-full px-8 pt-28 pb-8">
+        <div className="flex flex-col h-full px-8 pt-28 pb-8 overflow-y-auto">
           <div className="flex-1 flex flex-col justify-center gap-8">
             {navItems.map((item, i) => (
-              <a
-                key={item.label}
-                href={item.href}
-                onClick={() => setIsMobileMenuOpen(false)}
-                className={`text-4xl font-display text-foreground hover:text-muted-foreground transition-all duration-500 ${
-                  isMobileMenuOpen 
-                    ? "opacity-100 translate-y-0" 
-                    : "opacity-0 translate-y-4"
-                }`}
-                style={{ transitionDelay: isMobileMenuOpen ? `${i * 75}ms` : "0ms" }}
-              >
-                {item.label}
-              </a>
+              <div key={item.label}>
+                {item.hasDropdown ? (
+                  <button
+                    onClick={() => setExpandedMenu(expandedMenu === item.label ? null : item.label)}
+                    className={`text-4xl font-display text-foreground hover:text-muted-foreground transition-all duration-500 flex items-center gap-2 ${
+                      isMobileMenuOpen 
+                        ? "opacity-100 translate-y-0" 
+                        : "opacity-0 translate-y-4"
+                    }`}
+                    style={{ transitionDelay: isMobileMenuOpen ? `${i * 75}ms` : "0ms" }}
+                  >
+                    {item.label}
+                    <ChevronDown className={`w-6 h-6 transition-transform duration-300 ${expandedMenu === item.label ? 'rotate-180' : ''}`} />
+                  </button>
+                ) : (
+                  <a
+                    href={item.href}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className={`text-4xl font-display text-foreground hover:text-muted-foreground transition-all duration-500 block ${
+                      isMobileMenuOpen 
+                        ? "opacity-100 translate-y-0" 
+                        : "opacity-0 translate-y-4"
+                    }`}
+                    style={{ transitionDelay: isMobileMenuOpen ? `${i * 75}ms` : "0ms" }}
+                  >
+                    {item.label}
+                  </a>
+                )}
+
+                {/* Mobile Submenu */}
+                {item.hasDropdown && expandedMenu === item.label && (
+                  <div className="mt-4 ml-4 space-y-3 animate-char-in">
+                    {browseItems.map((subItem) => (
+                      <a
+                        key={subItem.label}
+                        href={subItem.href}
+                        onClick={() => {
+                          setIsMobileMenuOpen(false);
+                          setExpandedMenu(null);
+                        }}
+                        className="block text-xl font-display text-foreground/70 hover:text-foreground transition-all duration-300 hover-lift"
+                      >
+                        {subItem.label}
+                      </a>
+                    ))}
+                  </div>
+                )}
+              </div>
             ))}
           </div>
           
@@ -135,6 +185,9 @@ export function FloatingNav() {
           </div>
         </div>
       </div>
+
+      {/* Browse Floating Bar */}
+      <BrowseBar open={isBrowseOpen} onOpenChange={setIsBrowseOpen} />
     </header>
   );
 }

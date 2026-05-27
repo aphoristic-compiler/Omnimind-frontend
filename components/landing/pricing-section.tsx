@@ -18,7 +18,7 @@ const plans = [
       "API access",
       "Custom integrations",
     ],
-    cta: "Start exploring",
+    cta: "Sign in",
     popular: true,
   },
 ];
