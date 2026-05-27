@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { FloatingNav } from '@/components/dashboard/floating-nav';
-import { ArrowLeft, Eye, Calendar, User, TrendingUp } from 'lucide-react';
+import { ArrowLeft, Eye, Calendar, User, TrendingUp, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 
@@ -25,6 +25,7 @@ export default function BrowseContent() {
   const { toast } = useToast();
   
   const filter = (searchParams.get('filter') as FilterType) || 'all';
+  const q = searchParams.get('q');
   
   const [materials, setMaterials] = useState<Material[]>([]);
   const [loading, setLoading] = useState(true);
@@ -60,24 +61,29 @@ export default function BrowseContent() {
         let endpoint = '/api/materials';
         const params = new URLSearchParams();
         
-        switch (filter) {
-          case 'most-viewed':
-            params.set('sort', 'views');
-            params.set('order', 'desc');
-            break;
-          case 'trending':
-            params.set('sort', 'views');
-            params.set('order', 'desc');
-            params.set('limit', '20');
-            break;
-          case 'contributions':
-            params.set('mine', 'true');
-            break;
-          case 'all':
-          default:
-            params.set('sort', 'created_at');
-            params.set('order', 'desc');
-            break;
+        if (q) {
+          endpoint = '/api/search';
+          params.set('q', q);
+        } else {
+          switch (filter) {
+            case 'most-viewed':
+              params.set('sort', 'views');
+              params.set('order', 'desc');
+              break;
+            case 'trending':
+              params.set('sort', 'views');
+              params.set('order', 'desc');
+              params.set('limit', '20');
+              break;
+            case 'contributions':
+              params.set('mine', 'true');
+              break;
+            case 'all':
+            default:
+              params.set('sort', 'created_at');
+              params.set('order', 'desc');
+              break;
+          }
         }
 
         const url = `${endpoint}?${params.toString()}`;
@@ -115,7 +121,7 @@ export default function BrowseContent() {
     };
 
     fetchMaterials();
-  }, [filter, router, toast]);
+  }, [filter, q, router, toast]);
 
   const handleFilterChange = (newFilter: FilterType) => {
     router.push(`/browse?filter=${newFilter}`);
@@ -165,23 +171,35 @@ export default function BrowseContent() {
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-2">
-            {filterIcons[filter]}
-            <h1 className="text-4xl font-display">{filterLabels[filter]}</h1>
+            {q ? (
+              <>
+                <Search className="w-8 h-8" />
+                <h1 className="text-4xl font-display">Search Results</h1>
+              </>
+            ) : (
+              <>
+                {filterIcons[filter]}
+                <h1 className="text-4xl font-display">{filterLabels[filter]}</h1>
+              </>
+            )}
           </div>
           <p className="text-muted-foreground">
-            {filter === 'contributions' 
-              ? 'Materials you have uploaded'
-              : filter === 'most-viewed'
-                ? 'The most popular materials in the library'
-                : filter === 'trending'
-                  ? 'Currently trending materials'
-                  : 'Browse all available materials'
+            {q 
+              ? `Showing results for "${q}"`
+              : filter === 'contributions' 
+                ? 'Materials you have uploaded'
+                : filter === 'most-viewed'
+                  ? 'The most popular materials in the library'
+                  : filter === 'trending'
+                    ? 'Currently trending materials'
+                    : 'Browse all available materials'
             }
           </p>
         </div>
 
         {/* Filter Tabs */}
-        <div className="flex flex-wrap gap-2 mb-8">
+        {!q && (
+          <div className="flex flex-wrap gap-2 mb-8">
           {(Object.keys(filterLabels) as FilterType[]).map((f) => (
             <Button
               key={f}
@@ -194,6 +212,7 @@ export default function BrowseContent() {
             </Button>
           ))}
         </div>
+        )}
 
         {/* Loading State */}
         {loading && (
@@ -220,9 +239,11 @@ export default function BrowseContent() {
             </div>
             <h3 className="text-xl font-medium mb-2">No materials found</h3>
             <p className="text-muted-foreground mb-4">
-              {filter === 'contributions'
-                ? "You haven't uploaded any materials yet."
-                : 'No materials match this filter.'}
+              {q 
+                ? `No materials found matching "${q}".`
+                : filter === 'contributions'
+                  ? "You haven't uploaded any materials yet."
+                  : 'No materials match this filter.'}
             </p>
             {filter === 'contributions' && (
               <Button onClick={() => router.push('/dashboard')}>

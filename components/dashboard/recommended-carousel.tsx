@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { Sparkles } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 interface Topic {
   topic: string;
@@ -13,6 +14,7 @@ interface RecommendedCarouselProps {
 }
 
 export function RecommendedCarousel({ topics }: RecommendedCarouselProps) {
+  const router = useRouter();
   const displayTopics = topics.slice(0, 4);
   const maxValue = Math.max(...displayTopics.flatMap(t => t.trend));
 
@@ -31,6 +33,7 @@ export function RecommendedCarousel({ topics }: RecommendedCarouselProps) {
             key={index}
             className="group cursor-pointer"
             style={{ animationDelay: `${index * 100}ms` }}
+            onClick={() => router.push(`/browse?q=${encodeURIComponent(item.topic)}`)}
           >
             {/* Topic Title */}
             <div className="flex items-center justify-between mb-2">
