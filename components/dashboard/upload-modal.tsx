@@ -99,7 +99,7 @@ export function UploadModal({ open, onOpenChange }: UploadModalProps) {
         formData.append('tags', JSON.stringify(tags));
       }
 
-      const response = await fetch(`${baseUrl}/api/materials`, {
+      const response = await fetch(`/api/materials`, {
         method: 'POST',
         body: formData,
       });
