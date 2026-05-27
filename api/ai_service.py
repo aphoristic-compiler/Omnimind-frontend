@@ -50,10 +50,29 @@ def analyze_content(filename: str, extracted_text: str) -> dict:
         return {"category_slug": "general", "summary": "Analysis failed.", "tags": []}
 
 def generate_embedding(text: str) -> list[float]:
-    if not client: return [0.0] * 768
+    if not GEMINI_API_KEY: return [0.0] * 768
     try:
-        result = client.models.embed_content(model="text-embedding-004", contents=text[:5000])
-        return result.embeddings[0].values
+        if client:
+            result = client.models.embed_content(model="text-embedding-004", contents=text[:5000])
+            if hasattr(result, 'embeddings') and result.embeddings:
+                return result.embeddings[0].values
+            elif isinstance(result, dict) and 'embedding' in result:
+                return result['embedding']
     except Exception as e:
-        print(f"Embedding error: {e}")
-        return [0.0] * 768
+        print(f"SDK Embedding error: {e}")
+    
+    # Fallback to REST API
+    try:
+        import urllib.request
+        import json
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key={GEMINI_API_KEY}"
+        data = json.dumps({"model": "models/text-embedding-004", "content": {"parts": [{"text": text[:5000]}]}})
+        req = urllib.request.Request(url, data=data.encode("utf-8"), headers={"Content-Type": "application/json"})
+        with urllib.request.urlopen(req) as response:
+            res = json.loads(response.read().decode())
+            if "embedding" in res and "values" in res["embedding"]:
+                return res["embedding"]["values"]
+    except Exception as e:
+        print(f"REST API Embedding error: {e}")
+        
+    return [0.0] * 768

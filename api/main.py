@@ -495,11 +495,13 @@ def search_materials(q: str, db: Session = Depends(get_db), current_user: User =
             )
         text_matches = text_query.limit(5).all()
         
-        # Merge results, keeping semantic first but avoiding duplicates
-        seen_ids = {m.id for m in materials}
-        for tm in text_matches:
-            if tm.id not in seen_ids:
-                materials.append(tm)
+        # Merge results: Text/Title matches FIRST (higher priority), then semantic matches
+        combined_results = list(text_matches)
+        seen_ids = {m.id for m in text_matches}
+        for sm in materials:
+            if sm.id not in seen_ids:
+                combined_results.append(sm)
+        materials = combined_results
     else:
         # Fallback: robust text-based search ensuring all words match
         search_terms = q.split()
