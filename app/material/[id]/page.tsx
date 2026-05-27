@@ -326,7 +326,7 @@ export default function MaterialPage() {
                     </div>
                   )}
 
-                  <h1 className="text-3xl lg:text-4xl font-display text-card-foreground leading-tight mb-4">
+                  <h1 className="text-3xl lg:text-4xl font-display text-card-foreground leading-tight mb-4 break-words">
                     {material.title}
                   </h1>
 

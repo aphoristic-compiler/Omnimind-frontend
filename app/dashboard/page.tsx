@@ -47,6 +47,14 @@ export default function DashboardPage() {
           return;
         }
 
+        // Check cache first
+        const cached = sessionStorage.getItem('dashboard_stats');
+        if (cached) {
+          setStats(JSON.parse(cached));
+          setLoading(false);
+          return;
+        }
+
         const response = await fetch(`/api/dashboard/stats`, {
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -63,6 +71,10 @@ export default function DashboardPage() {
         
         if (!response.ok) throw new Error('Failed to fetch stats');
         const data = await response.json();
+        
+        // Save to cache for duration of session
+        sessionStorage.setItem('dashboard_stats', JSON.stringify(data));
+        
         setStats(data);
         setError(null);
       } catch (err) {

@@ -17,6 +17,7 @@ export function FloatingNav() {
     // Clear all auth data from localStorage
     localStorage.removeItem('token');
     localStorage.removeItem('username');
+    sessionStorage.removeItem('dashboard_stats');
     // Redirect to login page
     router.push('/login');
   };

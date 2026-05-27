@@ -1,5 +1,5 @@
 from fastapi import FastAPI, Depends, HTTPException, UploadFile, File, Form, Response
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, defer
 from sqlalchemy import desc, func
 from typing import List, Optional
 import uuid
@@ -250,7 +250,9 @@ def get_all_materials(skip: int = 0, limit: int = 20, db: Session = Depends(get_
 @app.get("/api/dashboard/stats", response_model=schemas.DashboardStats)
 def get_dashboard_stats(current_user: User = Depends(auth.get_current_user), db: Session = Depends(get_db)):
     # Get most viewed materials
-    most_viewed_materials = db.query(Material).order_by(desc(Material.views)).limit(5).all()
+    most_viewed_materials = db.query(Material).options(
+        defer(Material.content), defer(Material.embedding), defer(Material.file_data)
+    ).order_by(desc(Material.views)).limit(5).all()
     most_visited = []
     for m in most_viewed_materials:
         category_name = "General"
@@ -277,7 +279,9 @@ def get_dashboard_stats(current_user: User = Depends(auth.get_current_user), db:
         })
     
     # Get recently uploaded materials
-    recent_materials = db.query(Material).order_by(desc(Material.created_at)).limit(10).all()
+    recent_materials = db.query(Material).options(
+        defer(Material.content), defer(Material.embedding), defer(Material.file_data)
+    ).order_by(desc(Material.created_at)).limit(10).all()
     recently_uploaded = []
     for m in recent_materials:
         category_name = "General"
@@ -346,7 +350,9 @@ def generate_for_you_topics(db: Session, current_user: User) -> list:
         })
     
     # 2. USER'S UPLOAD TAGS - Analyze tags from user's uploaded materials
-    user_materials = db.query(Material).filter(Material.user_id == current_user.id).all()
+    user_materials = db.query(Material).options(
+        defer(Material.content), defer(Material.embedding), defer(Material.file_data)
+    ).filter(Material.user_id == current_user.id).all()
     user_tags = []
     for mat in user_materials:
         if mat.tags:
