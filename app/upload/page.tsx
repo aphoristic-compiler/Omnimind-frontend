@@ -11,6 +11,8 @@ interface FilePreview {
   file: File;
   name: string;
   size: string;
+  tags: string[];
+  tagInput: string;
 }
 
 export default function UploadPage() {
@@ -19,8 +21,7 @@ export default function UploadPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [files, setFiles] = useState<FilePreview[]>([]);
-  const [tags, setTags] = useState<string[]>([]);
-  const [tagInput, setTagInput] = useState('');
+  const [globalTagInput, setGlobalTagInput] = useState('');
   const [isDragging, setIsDragging] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -59,6 +60,8 @@ export default function UploadPage() {
       file,
       name: file.name,
       size: formatFileSize(file.size),
+      tags: [],
+      tagInput: ''
     }));
 
     setFiles(prev => [...prev, ...newPreviews]);
@@ -84,22 +87,55 @@ export default function UploadPage() {
     setFiles(prev => prev.filter((_, i) => i !== index));
   };
 
-  const addTag = () => {
-    const trimmedTag = tagInput.trim();
-    if (trimmedTag && !tags.includes(trimmedTag)) {
-      setTags(prev => [...prev, trimmedTag]);
-      setTagInput('');
+  const updateFileTagInput = (index: number, value: string) => {
+    setFiles(prev => prev.map((f, i) => i === index ? { ...f, tagInput: value } : f));
+  };
+
+  const addTagToFile = (index: number) => {
+    setFiles(prev => prev.map((f, i) => {
+      if (i === index) {
+        const trimmedTag = f.tagInput.trim();
+        if (trimmedTag && !f.tags.includes(trimmedTag)) {
+          return { ...f, tags: [...f.tags, trimmedTag], tagInput: '' };
+        }
+      }
+      return f;
+    }));
+  };
+
+  const removeTagFromFile = (fileIndex: number, tagToRemove: string) => {
+    setFiles(prev => prev.map((f, i) => {
+      if (i === fileIndex) {
+        return { ...f, tags: f.tags.filter(tag => tag !== tagToRemove) };
+      }
+      return f;
+    }));
+  };
+
+  const handleTagKeyDown = (e: React.KeyboardEvent, index: number) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      addTagToFile(index);
     }
   };
 
-  const removeTag = (tagToRemove: string) => {
-    setTags(prev => prev.filter(tag => tag !== tagToRemove));
+  const addGlobalTag = () => {
+    const trimmedTag = globalTagInput.trim();
+    if (trimmedTag) {
+      setFiles(prev => prev.map(f => {
+        if (!f.tags.includes(trimmedTag)) {
+          return { ...f, tags: [...f.tags, trimmedTag] };
+        }
+        return f;
+      }));
+      setGlobalTagInput('');
+    }
   };
 
-  const handleTagKeyDown = (e: React.KeyboardEvent) => {
+  const handleGlobalTagKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      addTag();
+      addGlobalTag();
     }
   };
 
@@ -123,8 +159,9 @@ export default function UploadPage() {
         formData.append('files', filePreview.file);
       });
       
-      // Always send tags (even empty array) so backend stores them
-      formData.append('tags', JSON.stringify(tags));
+      // Send tags as a 2D array, mapping to each file
+      const allTags = files.map(f => f.tags);
+      formData.append('tags', JSON.stringify(allTags));
 
       const token = localStorage.getItem('token');
       if (!token) {
@@ -154,7 +191,7 @@ export default function UploadPage() {
 
       toast({
         title: 'Materials Uploaded Successfully!',
-        description: `${files.length} file(s) processed${tags.length > 0 ? ` • Tags: ${tags.join(', ')}` : ''}`,
+        description: `${files.length} file(s) processed`,
       });
 
       // Clear dashboard cache to update stats and contributions
@@ -229,82 +266,105 @@ export default function UploadPage() {
             </div>
           </div>
 
-          {/* Selected Files */}
+          {/* Selected Files & Per-File Tags */}
           {files.length > 0 && (
             <div className="space-y-3">
               <p className="text-sm text-foreground/60">
                 {files.length} file(s) selected
               </p>
-              <div className="space-y-2">
+              <div className="space-y-4">
                 {files.map((file, index) => (
                   <div
                     key={index}
-                    className="flex items-center justify-between p-4 bg-secondary/50 rounded-lg border border-foreground/10"
+                    className="p-4 bg-secondary/30 rounded-xl border border-foreground/10 space-y-4"
                   >
-                    <div className="flex items-center gap-3">
-                      <FileText className="w-5 h-5 text-foreground/60" />
-                      <div>
-                        <p className="text-sm font-medium">{file.name}</p>
-                        <p className="text-xs text-foreground/50">{file.size}</p>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <FileText className="w-5 h-5 text-foreground/60" />
+                        <div>
+                          <p className="text-sm font-medium">{file.name}</p>
+                          <p className="text-xs text-foreground/50">{file.size}</p>
+                        </div>
                       </div>
+                      <button
+                        type="button"
+                        onClick={() => removeFile(index)}
+                        className="p-1.5 hover:bg-foreground/10 rounded-lg transition-colors"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => removeFile(index)}
-                      className="p-1.5 hover:bg-foreground/10 rounded-lg transition-colors"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
+                    
+                    {/* Per-File Tags Input */}
+                    <div className="relative pl-8">
+                      <input
+                        type="text"
+                        value={file.tagInput}
+                        onChange={(e) => updateFileTagInput(index, e.target.value)}
+                        onKeyDown={(e) => handleTagKeyDown(e, index)}
+                        placeholder="Add manual tags for this file (Enter to save)"
+                        className="w-full px-4 py-2 pr-10 bg-background/50 border border-foreground/10 rounded-lg text-sm text-foreground placeholder:text-foreground/40 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => addTagToFile(index)}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 p-1 hover:bg-foreground/10 rounded transition-colors"
+                      >
+                        <Tag className="w-4 h-4 text-foreground/50" />
+                      </button>
+                    </div>
+
+                    {/* Per-File Tags Display */}
+                    {file.tags.length > 0 && (
+                      <div className="flex flex-wrap gap-2 pl-8">
+                        {file.tags.map((tag) => (
+                          <span
+                            key={tag}
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-primary/10 text-primary text-xs rounded-full"
+                          >
+                            {tag}
+                            <button
+                              type="button"
+                              onClick={() => removeTagFromFile(index, tag)}
+                              className="hover:bg-primary/20 rounded-full p-0.5 transition-colors"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
             </div>
           )}
 
-          {/* Tags Input */}
-          <div className="space-y-3">
-            <label className="block text-sm font-medium text-foreground/80">
-              Tags (Optional)
-            </label>
-            <div className="relative">
-              <input
-                type="text"
-                value={tagInput}
-                onChange={(e) => setTagInput(e.target.value)}
-                onKeyDown={handleTagKeyDown}
-                placeholder="Add a tag and press Enter"
-                className="w-full px-4 py-3 pr-12 bg-secondary/50 border border-foreground/10 rounded-lg text-foreground placeholder:text-foreground/40 focus:outline-none focus:ring-2 focus:ring-primary/50"
-              />
-              <button
-                type="button"
-                onClick={addTag}
-                className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 hover:bg-foreground/10 rounded transition-colors"
-              >
-                <Tag className="w-4 h-4 text-foreground/50" />
-              </button>
-            </div>
-            
-            {/* Tags Display */}
-            {tags.length > 0 && (
-              <div className="flex flex-wrap gap-2 mt-3">
-                {tags.map((tag) => (
-                  <span
-                    key={tag}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 text-primary text-sm rounded-full"
-                  >
-                    {tag}
-                    <button
-                      type="button"
-                      onClick={() => removeTag(tag)}
-                      className="hover:bg-primary/20 rounded-full p-0.5 transition-colors"
-                    >
-                      <X className="w-3 h-3" />
-                    </button>
-                  </span>
-                ))}
+          {/* Global Tags Input */}
+          {files.length > 1 && (
+            <div className="space-y-3 pt-4 border-t border-border">
+              <label className="block text-sm font-medium text-foreground/80">
+                Apply Tag to All Files
+              </label>
+              <div className="relative">
+                <input
+                  type="text"
+                  value={globalTagInput}
+                  onChange={(e) => setGlobalTagInput(e.target.value)}
+                  onKeyDown={handleGlobalTagKeyDown}
+                  placeholder="Add a tag to all files and press Enter"
+                  className="w-full px-4 py-3 pr-12 bg-secondary/50 border border-foreground/10 rounded-lg text-foreground placeholder:text-foreground/40 focus:outline-none focus:ring-2 focus:ring-primary/50"
+                />
+                <button
+                  type="button"
+                  onClick={addGlobalTag}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 hover:bg-foreground/10 rounded transition-colors"
+                >
+                  <Tag className="w-4 h-4 text-foreground/50" />
+                </button>
               </div>
-            )}
-          </div>
+            </div>
+          )}
 
           {/* Submit Buttons */}
           <div className="flex gap-4 pt-6 border-t border-border">

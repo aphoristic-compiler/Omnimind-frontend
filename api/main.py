@@ -100,17 +100,22 @@ async def upload_materials(
         )
 
     # Parse user-provided tags (sent as JSON string from the frontend)
-    user_tags = []
+    user_tags_matrix = []
     if tags:
         try:
             parsed = json.loads(tags)
             if isinstance(parsed, list):
-                user_tags = [str(t).strip() for t in parsed if str(t).strip()]
+                if len(parsed) > 0 and isinstance(parsed[0], list):
+                    # Frontend now sends a 2D array: [["tag1"], ["tag2", "tag3"]]
+                    user_tags_matrix = [[str(t).strip() for t in tag_list if str(t).strip()] for tag_list in parsed]
+                else:
+                    # Fallback for old single array format
+                    user_tags_matrix = [[str(t).strip() for t in parsed if str(t).strip()]] * len(files)
         except (json.JSONDecodeError, TypeError):
             pass
 
     results = []
-    for file in files:
+    for i, file in enumerate(files):
         contents = await file.read()
         extracted_text = ai_service.extract_text_from_file(file.filename, contents)
         if not extracted_text: continue
@@ -125,8 +130,9 @@ async def upload_materials(
         embedding = ai_service.generate_embedding(advanced_semantic_text)
         
         # Merge user-provided tags with AI-generated tags (user tags take priority, no duplicates)
+        current_file_user_tags = user_tags_matrix[i] if i < len(user_tags_matrix) else []
         ai_tags = ai_data.get("tags", []) or []
-        merged_tags = list(dict.fromkeys(user_tags + ai_tags))  # preserves order, removes dupes
+        merged_tags = list(dict.fromkeys(current_file_user_tags + ai_tags))  # preserves order, removes dupes
         
         category = db.query(Category).filter(Category.slug == ai_data["category_slug"]).first()
         cat_id = category.id if category else None
