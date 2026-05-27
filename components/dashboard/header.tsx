@@ -3,13 +3,12 @@
 import React, { useState } from 'react';
 import { Search, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { UploadModal } from './upload-modal';
 import { useToast } from '@/hooks/use-toast';
+import Link from 'next/link';
 
 export function Header() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
-  const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [showResults, setShowResults] = useState(false);
   const [username, setUsername] = useState<string>('');
@@ -105,20 +104,18 @@ export function Header() {
             </div>
 
             {/* Upload Button */}
-            <Button
-              onClick={() => setIsUploadOpen(true)}
-              className="gap-2 bg-foreground hover:bg-foreground/90 text-background rounded-full h-12 px-6 transition-all duration-300 hover-lift font-medium"
-            >
-              <Upload className="w-4 h-4" />
-              <span className="hidden sm:inline">Upload Material</span>
-              <span className="sm:hidden">Upload</span>
-            </Button>
+            <Link href="/upload">
+              <Button
+                className="gap-2 bg-foreground hover:bg-foreground/90 text-background rounded-full h-12 px-6 transition-all duration-300 hover-lift font-medium"
+              >
+                <Upload className="w-4 h-4" />
+                <span className="hidden sm:inline">Upload Material</span>
+                <span className="sm:hidden">Upload</span>
+              </Button>
+            </Link>
           </div>
         </div>
       </header>
-
-      {/* Upload Modal */}
-      <UploadModal open={isUploadOpen} onOpenChange={setIsUploadOpen} />
     </>
   );
 }
