@@ -35,8 +35,25 @@ class MaterialOut(BaseModel):
     class Config:
         from_attributes = True
 
+class MostVisitedItem(BaseModel):
+    id: str
+    title: str
+    category: str
+    views: int
+    summary: str
+
+class RecentlyUploadedItem(BaseModel):
+    id: str
+    title: str
+    category: str
+    uploaded_at: str
+
+class TrendingTopic(BaseModel):
+    topic: str
+    trend: List[int]
+
 class DashboardStats(BaseModel):
-    total_materials: int
-    total_views: int
-    personal_uploads: int
-    trending_categories: List[str]
+    most_visited: List[MostVisitedItem]
+    recently_uploaded: List[RecentlyUploadedItem]
+    user_contributions: int
+    trending_topics: List[TrendingTopic]

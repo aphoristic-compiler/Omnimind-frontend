@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Depends, HTTPException, UploadFile, File
 from sqlalchemy.orm import Session
-from sqlalchemy import desc
+from sqlalchemy import desc, func
 from typing import List
 import uuid
 
@@ -108,12 +108,64 @@ def get_all_materials(skip: int = 0, limit: int = 20, db: Session = Depends(get_
 
 @app.get("/api/dashboard/stats", response_model=schemas.DashboardStats)
 def get_dashboard_stats(current_user: User = Depends(auth.get_current_user), db: Session = Depends(get_db)):
-    total_materials = db.query(Material).count()
-    views_result = db.query(db.func.sum(Material.views)).scalar()
-    total_views = views_result if views_result else 0
-    personal_uploads = db.query(Material).filter(Material.user_id == current_user.id).count()
+    # Get most viewed materials
+    most_viewed_materials = db.query(Material).order_by(desc(Material.views)).limit(5).all()
+    most_visited = []
+    for m in most_viewed_materials:
+        category_name = "General"
+        if m.category_id:
+            cat = db.query(Category).filter(Category.id == m.category_id).first()
+            if cat:
+                category_name = cat.name
+        most_visited.append({
+            "id": str(m.id),
+            "title": m.title,
+            "category": category_name,
+            "views": m.views,
+            "summary": m.summary or "No summary available"
+        })
+    
+    # If no materials, add a placeholder
+    if not most_visited:
+        most_visited.append({
+            "id": "placeholder",
+            "title": "No materials yet",
+            "category": "General",
+            "views": 0,
+            "summary": "Upload your first material to get started!"
+        })
+    
+    # Get recently uploaded materials
+    recent_materials = db.query(Material).order_by(desc(Material.created_at)).limit(10).all()
+    recently_uploaded = []
+    for m in recent_materials:
+        category_name = "General"
+        if m.category_id:
+            cat = db.query(Category).filter(Category.id == m.category_id).first()
+            if cat:
+                category_name = cat.name
+        recently_uploaded.append({
+            "id": str(m.id),
+            "title": m.title,
+            "category": category_name,
+            "uploaded_at": m.created_at.isoformat() if m.created_at else ""
+        })
+    
+    # Count user's personal contributions
+    user_contributions = db.query(Material).filter(Material.user_id == current_user.id).count()
+    
+    # Trending topics (simplified - could be enhanced with actual trending logic)
+    trending_topics = [
+        {"topic": "AI & Machine Learning", "trend": [10, 15, 12, 18, 22, 25, 30]},
+        {"topic": "Data Science", "trend": [8, 12, 15, 14, 18, 20, 22]},
+        {"topic": "Software Engineering", "trend": [5, 8, 10, 12, 15, 18, 20]}
+    ]
+    
     return schemas.DashboardStats(
-        total_materials=total_materials, total_views=total_views, personal_uploads=personal_uploads, trending_categories=["AI & Machine Learning"]
+        most_visited=most_visited,
+        recently_uploaded=recently_uploaded,
+        user_contributions=user_contributions,
+        trending_topics=trending_topics
     )
 
 # --- SEARCH ENDPOINT ---
