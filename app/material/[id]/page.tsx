@@ -223,6 +223,9 @@ export default function MaterialPage() {
         description: `"${material.title}" has been removed.`,
       });
       
+      // Clear dashboard cache so it reflects the deletion
+      sessionStorage.removeItem('dashboard_stats');
+      
       // Redirect to dashboard
       router.push('/dashboard');
       

@@ -30,7 +30,7 @@ export function MostVisitedCard({
   const router = useRouter();
 
   return (
-    <div className="bg-card/50 backdrop-blur border border-border/50 rounded-2xl overflow-hidden hover-lift transition-all duration-500 h-full flex flex-col hover:border-foreground/20">
+    <div className="bg-card border border-border/50 rounded-2xl overflow-hidden hover-lift transition-all duration-500 h-full flex flex-col hover:border-foreground/20">
       {/* Hero Section */}
       <div className="bg-gradient-to-br from-foreground/5 via-transparent to-transparent p-8 border-b border-border/50">
         <div className="flex items-start justify-between mb-6">

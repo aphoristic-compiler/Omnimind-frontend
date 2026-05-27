@@ -157,6 +157,9 @@ export default function UploadPage() {
         description: `${files.length} file(s) processed${tags.length > 0 ? ` • Tags: ${tags.join(', ')}` : ''}`,
       });
 
+      // Clear dashboard cache to update stats and contributions
+      sessionStorage.removeItem('dashboard_stats');
+
       // Redirect to dashboard after successful upload
       router.push('/dashboard');
     } catch (error) {
