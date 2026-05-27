@@ -33,9 +33,12 @@ def startup_event():
 
 # --- AUTH ENDPOINTS ---
 @app.post("/api/auth/signup", response_model=schemas.Token)
+@app.post("/api/auth/register", response_model=schemas.Token)
 def signup(user: schemas.UserCreate, db: Session = Depends(get_db)):
     if db.query(User).filter(User.email == user.email).first():
-        raise HTTPException(status_code=400, detail="Email registered")
+        raise HTTPException(status_code=400, detail="Email already registered")
+    if db.query(User).filter(User.username == user.username).first():
+        raise HTTPException(status_code=400, detail="Username already taken")
     hashed_pw = auth.get_password_hash(user.password)
     new_user = User(username=user.username, email=user.email, password_hash=hashed_pw)
     db.add(new_user)
@@ -45,10 +48,13 @@ def signup(user: schemas.UserCreate, db: Session = Depends(get_db)):
     return {"access_token": token, "token_type": "bearer", "user": new_user}
 
 @app.post("/api/auth/login", response_model=schemas.Token)
-def login(form_data: schemas.UserCreate, db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.username == form_data.username).first()
+def login(form_data: schemas.UserLogin, db: Session = Depends(get_db)):
+    # Allow login by username or email
+    user = db.query(User).filter(
+        (User.username == form_data.username) | (User.email == form_data.username)
+    ).first()
     if not user or not auth.verify_password(form_data.password, user.password_hash):
-        raise HTTPException(status_code=401, detail="Incorrect credentials")
+        raise HTTPException(status_code=401, detail="Incorrect username or password")
     token = auth.create_access_token(data={"sub": str(user.id)})
     return {"access_token": token, "token_type": "bearer", "user": user}
 

@@ -9,6 +9,7 @@ import { BotSortingAnimation } from '@/components/login/bot-sorting-animation';
 
 export default function LoginPage() {
   const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -26,24 +27,42 @@ export default function LoginPage() {
       return;
     }
 
+    if (isSignUp && !email.trim()) {
+      setError('Please enter your email address');
+      return;
+    }
+
     try {
       setIsLoading(true);
       
       const endpoint = isSignUp ? '/api/auth/register' : '/api/auth/login';
+      const body = isSignUp 
+        ? { username: username.trim(), email: email.trim(), password: password.trim() }
+        : { username: username.trim(), password: password.trim() };
       
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          username: username.trim(), 
-          password: password.trim() 
-        }),
+        body: JSON.stringify(body),
       });
 
-      const data = await response.json();
+      let data;
+      try {
+        data = await response.json();
+      } catch {
+        throw new Error('Server error. Please try again later.');
+      }
 
       if (!response.ok) {
-        throw new Error(data.detail || data.message || 'Authentication failed');
+        // Handle different error formats from FastAPI
+        const errorMessage = typeof data?.detail === 'string' 
+          ? data.detail 
+          : typeof data?.message === 'string'
+            ? data.message
+            : Array.isArray(data?.detail)
+              ? data.detail.map((e: { msg?: string }) => e.msg || e).join(', ')
+              : 'Authentication failed. Please try again.';
+        throw new Error(errorMessage);
       }
 
       // Save the JWT token from the backend
@@ -121,21 +140,39 @@ export default function LoginPage() {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-5 mb-6">
-              {/* Username/Email Input */}
+              {/* Username Input */}
               <div className="space-y-2 animate-char-in" style={{ animationDelay: '50ms' }}>
                 <label htmlFor="username" className="block text-sm font-medium text-foreground/80">
-                  Username or Email
+                  Username{!isSignUp && ' or Email'}
                 </label>
                 <input
                   id="username"
                   type="text"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  placeholder="Enter your username"
+                  placeholder={isSignUp ? 'Choose a username' : 'Enter your username or email'}
                   className="w-full px-4 py-3 bg-secondary/50 border border-foreground/10 rounded-lg text-foreground placeholder:text-foreground/40 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-transparent transition-all duration-300 hover:border-foreground/20"
                   disabled={isLoading}
                 />
               </div>
+
+              {/* Email Input - Only show for sign up */}
+              {isSignUp && (
+                <div className="space-y-2 animate-char-in" style={{ animationDelay: '75ms' }}>
+                  <label htmlFor="email" className="block text-sm font-medium text-foreground/80">
+                    Email
+                  </label>
+                  <input
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="Enter your email address"
+                    className="w-full px-4 py-3 bg-secondary/50 border border-foreground/10 rounded-lg text-foreground placeholder:text-foreground/40 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-transparent transition-all duration-300 hover:border-foreground/20"
+                    disabled={isLoading}
+                  />
+                </div>
+              )}
 
               {/* Password Input */}
               <div className="space-y-2 animate-char-in" style={{ animationDelay: '100ms' }}>
@@ -188,7 +225,7 @@ export default function LoginPage() {
               {/* Submit Button */}
               <Button
                 type="submit"
-                disabled={isLoading || !username.trim() || !password.trim()}
+                disabled={isLoading || !username.trim() || !password.trim() || (isSignUp && !email.trim())}
                 className="w-full gap-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg transition-all duration-300 h-12 font-medium group animate-char-in"
                 style={{ animationDelay: '200ms' }}
               >
