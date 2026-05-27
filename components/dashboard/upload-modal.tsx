@@ -88,7 +88,6 @@ export function UploadModal({ open, onOpenChange }: UploadModalProps) {
 
     try {
       setIsSubmitting(true);
-      const baseUrl = process.env.NEXT_PUBLIC_API_URL || '';
       const formData = new FormData();
       
       files.forEach((filePreview) => {
@@ -104,21 +103,33 @@ export function UploadModal({ open, onOpenChange }: UploadModalProps) {
         throw new Error('Not authenticated. Please log in again.');
       }
 
-      const response = await fetch(`/api/materials`, {
+      console.log('[v0] Starting upload with', files.length, 'files');
+      
+      const response = await fetch('/api/materials', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
-          // Note: Do NOT set Content-Type for FormData - browser does it automatically
         },
         body: formData,
       });
 
+      console.log('[v0] Upload response status:', response.status);
+
+      const responseText = await response.text();
+      console.log('[v0] Upload response body:', responseText);
+
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.detail || 'Upload failed');
+        let errorMessage = 'Upload failed';
+        try {
+          const errorData = JSON.parse(responseText);
+          errorMessage = errorData.detail || errorData.message || errorMessage;
+        } catch {
+          errorMessage = responseText || errorMessage;
+        }
+        throw new Error(errorMessage);
       }
 
-      const data = await response.json();
+      const data = JSON.parse(responseText);
 
       toast({
         title: 'Materials Uploaded Successfully!',
@@ -129,6 +140,9 @@ export function UploadModal({ open, onOpenChange }: UploadModalProps) {
       setTags([]);
       setTagInput('');
       onOpenChange(false);
+      
+      // Refresh the page to show new materials
+      window.location.reload();
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Upload failed';
       console.error('[v0] Upload error:', error);
@@ -155,11 +169,11 @@ export function UploadModal({ open, onOpenChange }: UploadModalProps) {
       {/* Modal */}
       <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
         <div
-          className="w-full max-w-2xl bg-card border border-border rounded-lg shadow-xl animate-in fade-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto"
+          className="w-full max-w-xl bg-card border border-border rounded-lg shadow-xl animate-in fade-in zoom-in-95 duration-200 flex flex-col max-h-[85vh]"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="sticky top-0 bg-card flex items-center justify-between p-6 border-b border-border">
+          <div className="flex items-center justify-between p-6 border-b border-border flex-shrink-0">
             <h2 className="text-2xl font-display text-card-foreground">Upload Materials</h2>
             <button
               onClick={() => !isSubmitting && onOpenChange(false)}
@@ -170,8 +184,9 @@ export function UploadModal({ open, onOpenChange }: UploadModalProps) {
             </button>
           </div>
 
-          {/* Form */}
-          <form onSubmit={handleSubmit} className="p-6 space-y-6">
+          {/* Form - Scrollable */}
+          <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
+            <div className="p-6 space-y-6 overflow-y-auto flex-1">
             {/* File Upload Area */}
             <div>
               <label className="block text-sm font-medium text-card-foreground mb-3">
@@ -293,9 +308,10 @@ export function UploadModal({ open, onOpenChange }: UploadModalProps) {
                 )}
               </div>
             </div>
+            </div>
 
-            {/* Buttons */}
-            <div className="flex gap-3 justify-end pt-4 border-t border-border">
+            {/* Buttons - Fixed at bottom */}
+            <div className="flex gap-3 justify-end p-6 border-t border-border bg-card flex-shrink-0">
               <Button
                 type="button"
                 variant="outline"
