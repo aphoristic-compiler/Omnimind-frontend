@@ -38,7 +38,12 @@ export function RecommendedCarousel({ topics }: RecommendedCarouselProps) {
                 {item.topic}
               </p>
               <span className="text-xs text-muted-foreground">
-                {Math.round((item.trend[item.trend.length - 1] || 0) * 100)}%
+                {(() => {
+                  const lastValue = item.trend[item.trend.length - 1] || 0;
+                  const firstValue = item.trend[0] || 1;
+                  const growth = Math.round(((lastValue - firstValue) / firstValue) * 100);
+                  return growth > 0 ? `+${growth}%` : `${growth}%`;
+                })()}
               </span>
             </div>
 

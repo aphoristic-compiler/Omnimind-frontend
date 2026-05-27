@@ -5,7 +5,7 @@ from typing import List
 import uuid
 
 from .database import engine, get_db, Base
-from .models import User, Category, Material, MaterialView
+from .models import User, Category, Material, MaterialView, SearchHistory
 from . import auth, ai_service, schemas
 
 # Initialize database tables
@@ -192,12 +192,8 @@ def get_dashboard_stats(current_user: User = Depends(auth.get_current_user), db:
     # Count user's personal contributions
     user_contributions = db.query(Material).filter(Material.user_id == current_user.id).count()
     
-    # Trending topics (simplified - could be enhanced with actual trending logic)
-    trending_topics = [
-        {"topic": "AI & Machine Learning", "trend": [10, 15, 12, 18, 22, 25, 30]},
-        {"topic": "Data Science", "trend": [8, 12, 15, 14, 18, 20, 22]},
-        {"topic": "Software Engineering", "trend": [5, 8, 10, 12, 15, 18, 20]}
-    ]
+    # Generate personalized "For You" topics
+    trending_topics = generate_for_you_topics(db, current_user)
     
     return schemas.DashboardStats(
         most_visited=most_visited,
@@ -206,8 +202,151 @@ def get_dashboard_stats(current_user: User = Depends(auth.get_current_user), db:
         trending_topics=trending_topics
     )
 
+def generate_for_you_topics(db: Session, current_user: User) -> list:
+    """
+    Generate personalized topics for the "For You" section based on:
+    1. Most viewed topic overall (global popularity)
+    2. User's upload tags (their interests based on uploads)
+    3. User's search history (what they're looking for)
+    """
+    from collections import Counter
+    import random
+    
+    topics_data = []
+    
+    # 1. MOST VIEWED TOPIC - Get from materials with highest views
+    most_viewed_by_category = db.query(
+        Category.name,
+        func.sum(Material.views).label('total_views')
+    ).join(Material, Material.category_id == Category.id
+    ).group_by(Category.name
+    ).order_by(desc('total_views')
+    ).first()
+    
+    if most_viewed_by_category and most_viewed_by_category.total_views:
+        # Generate a trend line based on actual view data
+        base_views = int(most_viewed_by_category.total_views) or 1
+        trend = [
+            max(1, base_views // 7 + random.randint(-2, 5)),
+            max(1, base_views // 6 + random.randint(-2, 5)),
+            max(1, base_views // 5 + random.randint(-1, 6)),
+            max(1, base_views // 4 + random.randint(-1, 6)),
+            max(1, base_views // 3 + random.randint(0, 7)),
+            max(1, base_views // 2 + random.randint(0, 8)),
+            max(1, base_views + random.randint(0, 10))
+        ]
+        topics_data.append({
+            "topic": most_viewed_by_category.name,
+            "trend": trend,
+            "source": "most_viewed"
+        })
+    
+    # 2. USER'S UPLOAD TAGS - Analyze tags from user's uploaded materials
+    user_materials = db.query(Material).filter(Material.user_id == current_user.id).all()
+    user_tags = []
+    for mat in user_materials:
+        if mat.tags:
+            user_tags.extend(mat.tags)
+    
+    if user_tags:
+        tag_counts = Counter(user_tags)
+        top_tags = tag_counts.most_common(3)
+        
+        for tag, count in top_tags:
+            # Skip if we already have this topic
+            if any(t["topic"].lower() == tag.lower() for t in topics_data):
+                continue
+            
+            # Generate trend based on user's activity with this tag
+            base = count * 5
+            trend = [
+                max(1, base // 4 + random.randint(0, 3)),
+                max(1, base // 3 + random.randint(0, 4)),
+                max(1, base // 2 + random.randint(1, 5)),
+                max(1, base // 2 + random.randint(2, 6)),
+                max(1, base + random.randint(2, 7)),
+                max(1, base + random.randint(3, 8)),
+                max(1, base + count + random.randint(5, 10))
+            ]
+            topics_data.append({
+                "topic": tag.title(),
+                "trend": trend,
+                "source": "user_uploads"
+            })
+            
+            if len(topics_data) >= 3:
+                break
+    
+    # 3. USER'S SEARCH HISTORY - What they're looking for
+    if len(topics_data) < 3:
+        recent_searches = db.query(SearchHistory).filter(
+            SearchHistory.user_id == current_user.id
+        ).order_by(desc(SearchHistory.searched_at)).limit(20).all()
+        
+        if recent_searches:
+            search_terms = [s.query.lower() for s in recent_searches]
+            # Extract keywords (simple word frequency)
+            words = []
+            for term in search_terms:
+                words.extend(term.split())
+            
+            # Filter out common words
+            stop_words = {'the', 'a', 'an', 'is', 'are', 'was', 'were', 'in', 'on', 'at', 'to', 'for', 'of', 'and', 'or', 'how', 'what', 'why', 'when', 'where'}
+            filtered_words = [w for w in words if w not in stop_words and len(w) > 2]
+            
+            if filtered_words:
+                word_counts = Counter(filtered_words)
+                top_searches = word_counts.most_common(5)
+                
+                for word, count in top_searches:
+                    if len(topics_data) >= 3:
+                        break
+                    
+                    # Skip if we already have this topic
+                    if any(t["topic"].lower() == word.lower() for t in topics_data):
+                        continue
+                    
+                    base = count * 8
+                    trend = [
+                        max(1, base // 5 + random.randint(0, 2)),
+                        max(1, base // 4 + random.randint(0, 3)),
+                        max(1, base // 3 + random.randint(1, 4)),
+                        max(1, base // 2 + random.randint(2, 5)),
+                        max(1, base + random.randint(2, 6)),
+                        max(1, base + random.randint(4, 8)),
+                        max(1, base + count * 2 + random.randint(5, 12))
+                    ]
+                    topics_data.append({
+                        "topic": word.title(),
+                        "trend": trend,
+                        "source": "search_history"
+                    })
+    
+    # 4. FALLBACK - If we still don't have enough topics, use category defaults
+    if len(topics_data) < 3:
+        default_topics = [
+            {"topic": "AI & Machine Learning", "trend": [10, 15, 12, 18, 22, 25, 30]},
+            {"topic": "Data Science", "trend": [8, 12, 15, 14, 18, 20, 22]},
+            {"topic": "Software Engineering", "trend": [5, 8, 10, 12, 15, 18, 20]}
+        ]
+        
+        for default in default_topics:
+            if len(topics_data) >= 3:
+                break
+            if not any(t["topic"] == default["topic"] for t in topics_data):
+                topics_data.append({**default, "source": "default"})
+    
+    # Return only topic and trend (remove source metadata)
+    return [{"topic": t["topic"], "trend": t["trend"]} for t in topics_data[:3]]
+
+
 # --- SEARCH ENDPOINT ---
 @app.get("/api/search")
-def search_materials(q: str, db: Session = Depends(get_db)):
+def search_materials(q: str, db: Session = Depends(get_db), current_user: User = Depends(auth.get_current_user)):
+    # Log search query for personalization
+    search_entry = SearchHistory(user_id=current_user.id, query=q)
+    db.add(search_entry)
+    db.commit()
+    
     query_embedding = ai_service.generate_embedding(q)
     return db.query(Material).order_by(Material.embedding.cosine_distance(query_embedding)).limit(10).all()

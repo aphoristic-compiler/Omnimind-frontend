@@ -40,3 +40,10 @@ class MaterialView(Base):
     material_id = Column(UUID(as_uuid=True), ForeignKey("materials.id"))
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
     viewed_at = Column(DateTime, default=datetime.utcnow)
+
+class SearchHistory(Base):
+    __tablename__ = "search_history"
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    query = Column(String(500), nullable=False)
+    searched_at = Column(DateTime, default=datetime.utcnow)
