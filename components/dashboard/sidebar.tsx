@@ -21,7 +21,8 @@ export function Sidebar({ open, onToggle }: SidebarProps) {
   useEffect(() => {
     const checkApiStatus = async () => {
       try {
-        const response = await fetch('http://localhost:8000/api/dashboard/stats');
+        const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+        const response = await fetch(`${baseUrl}/api/dashboard/stats`);
         setApiConnected(response.ok);
       } catch {
         setApiConnected(false);

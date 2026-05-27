@@ -25,9 +25,8 @@ export function Header() {
 
     try {
       setIsSearching(true);
-      const response = await fetch(
-        `http://localhost:8000/api/materials/search?query=${encodeURIComponent(value)}&limit=5`
-      );
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+      const response = await fetch(`${baseUrl}/api/dashboard/stats`);
       if (!response.ok) throw new Error('Search failed');
       const data = await response.json();
       setSearchResults(data.results || []);
