@@ -54,6 +54,14 @@ def analyze_content(filename: str, extracted_text: str) -> dict:
         with urllib.request.urlopen(req) as response:
             res_data = json.loads(response.read().decode())
             text_response = res_data["candidates"][0]["content"]["parts"][0]["text"]
+            
+            # Clean potential markdown JSON fences returned by the model
+            text_response = text_response.strip()
+            if text_response.startswith("```json"): text_response = text_response[7:]
+            elif text_response.startswith("```"): text_response = text_response[3:]
+            if text_response.endswith("```"): text_response = text_response[:-3]
+            text_response = text_response.strip()
+            
             return json.loads(text_response)
             
     except urllib.error.HTTPError as e:
@@ -71,6 +79,7 @@ def generate_embedding(text: str) -> list[float]:
     try:
         url = f"https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key={GEMINI_API_KEY}"
         payload = {
+            "model": "models/text-embedding-004",
             "content": {"parts": [{"text": text[:5000]}]}
         }
         data = json.dumps(payload).encode("utf-8")

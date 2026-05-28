@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>KVGAI Full Stack Project Report — Aryan Sharma</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+
+    :root {
+      --bg: #0f0f11;
+      --surface: #18181b;
+      --surface2: #1e1e23;
+      --border: #2a2a30;
+      --text: #e4e4e7;
+      --text-muted: #8b8b98;
+      --accent: #a78bfa;
+      --accent-dim: rgba(167, 139, 250, 0.12);
+      --white: #fafafa;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .page {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 60px 48px;
+    }
+
+    /* ---- COVER ---- */
+    .cover {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding-bottom: 80px;
+      page-break-after: always;
+    }
+    .cover-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 32px;
+    }
+    .cover-title {
+      font-size: 52px;
+      font-weight: 800;
+      letter-spacing: -1.5px;
+      line-height: 1.1;
+      color: var(--white);
+      margin-bottom: 12px;
+    }
+    .cover-subtitle {
+      font-size: 22px;
+      font-weight: 300;
+      color: var(--text-muted);
+      margin-bottom: 48px;
+    }
+    .cover-meta {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding: 24px 0;
+      border-top: 1px solid var(--border);
+    }
+    .cover-meta-row {
+      display: flex;
+      gap: 12px;
+      align-items: baseline;
+    }
+    .meta-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      width: 100px;
+      flex-shrink: 0;
+    }
+    .meta-value {
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--white);
+    }
+
+    /* ---- SECTIONS ---- */
+    .section {
+      margin-bottom: 56px;
+    }
+    .section-number {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 3px;
+      color: var(--accent);
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    h2 {
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--white);
+      letter-spacing: -0.5px;
+      margin-bottom: 20px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    h3 {
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--white);
+      margin-bottom: 10px;
+      margin-top: 28px;
+    }
+    p {
+      font-size: 14.5px;
+      color: var(--text);
+      margin-bottom: 14px;
+    }
+    ul {
+      padding-left: 20px;
+      margin-bottom: 14px;
+    }
+    li {
+      font-size: 14px;
+      color: var(--text);
+      margin-bottom: 6px;
+    }
+    li strong {
+      color: var(--white);
+    }
+
+    /* ---- TECH STACK GRID ---- */
+    .stack-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-top: 16px;
+    }
+    .stack-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 20px;
+    }
+    .stack-card-title {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 10px;
+    }
+    .stack-card ul {
+      list-style: none;
+      padding-left: 0;
+    }
+    .stack-card li {
+      font-size: 13.5px;
+      color: var(--text);
+      padding: 3px 0;
+    }
+    .stack-card li::before {
+      content: "→ ";
+      color: var(--text-muted);
+    }
+
+    /* ---- ENDPOINT TABLE ---- */
+    .endpoint-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 16px;
+      font-size: 13px;
+    }
+    .endpoint-table th {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      text-align: left;
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    .endpoint-table td {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+    .endpoint-table tr:last-child td {
+      border-bottom: none;
+    }
+    .method {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 4px;
+      display: inline-block;
+    }
+    .method-get { background: rgba(16, 185, 129, 0.15); color: #34d399; }
+    .method-post { background: rgba(59, 130, 246, 0.15); color: #60a5fa; }
+    .method-delete { background: rgba(239, 68, 68, 0.15); color: #f87171; }
+    .route {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      color: var(--white);
+    }
+
+    /* ---- DB SCHEMA ---- */
+    .schema-block {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 20px 24px;
+      margin-bottom: 16px;
+    }
+    .schema-name {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--accent);
+      margin-bottom: 10px;
+    }
+    .schema-cols {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4px 24px;
+    }
+    .schema-col {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+    .schema-col span {
+      color: var(--text);
+    }
+
+    /* ---- PRINT ---- */
+    @media print {
+      body { background: white; color: #1a1a1a; }
+      .page { padding: 40px 36px; }
+      .cover { min-height: auto; padding-bottom: 40px; }
+      :root {
+        --bg: white;
+        --surface: #f4f4f5;
+        --surface2: #e9e9ed;
+        --border: #d4d4d8;
+        --text: #27272a;
+        --text-muted: #71717a;
+        --accent: #7c3aed;
+        --white: #09090b;
+      }
+      h2 { break-after: avoid; }
+      .endpoint-table { break-inside: avoid; }
+      .schema-block { break-inside: avoid; }
+      .stack-grid { break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="page">
+  <!-- ======== COVER ======== -->
+  <div class="cover">
+    <div class="cover-label">KVGAI Full Stack Project</div>
+    <h1 class="cover-title">OmniMind Hub</h1>
+    <p class="cover-subtitle">AI-Powered Knowledge Management &amp; Semantic Search Platform</p>
+
+    <div class="cover-meta">
+      <div class="cover-meta-row">
+        <span class="meta-label">Name</span>
+        <span class="meta-value">Aryan Sharma</span>
+      </div>
+      <div class="cover-meta-row">
+        <span class="meta-label">ID</span>
+        <span class="meta-value">2024B5A71065P</span>
+      </div>
+      <div class="cover-meta-row">
+        <span class="meta-label">Date</span>
+        <span class="meta-value">28 May 2026</span>
+      </div>
+      <div class="cover-meta-row">
+        <span class="meta-label">Stack</span>
+        <span class="meta-value">Next.js 16 · FastAPI · PostgreSQL · Gemini AI</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======== 01 — PROJECT DESCRIPTION ======== -->
+  <div class="section">
+    <div class="section-number">01 — Overview</div>
+    <h2>Project Description</h2>
+    <p>
+      <strong>OmniMind Hub</strong> is a full-stack, AI-powered knowledge management and academic library platform. It enables users to upload various document formats (PDFs, Word documents, Markdown, and plain text) which are then automatically processed, summarized, categorized, and embedded into a high-dimensional vector space by the Google Gemini AI API in real time.
+    </p>
+    <p>
+      The platform features a <strong>Hybrid Semantic Search Engine</strong> that fuses traditional SQL keyword matching with deep cosine-similarity vector search powered by the <code>pgvector</code> PostgreSQL extension on Supabase. This allows users to find documents not just by exact keywords, but by meaning and conceptual relevance. For example, searching "symbolic reasoning" will surface documents about "formal logic" even if those exact words don't appear.
+    </p>
+    <p>
+      A personalized <strong>"For You" dashboard</strong> dynamically recommends topics by analyzing three data streams: the globally most-viewed categories, the user's own upload tags, and their historical search queries. The platform also enforces per-user upload limits, supports secure material deletion with ownership authorization, and provides original file downloads with inline previewing.
+    </p>
+    <p>
+      The entire application is deployed as a monorepo on <strong>Vercel</strong>, with the Next.js frontend and the Python FastAPI backend running as serverless functions behind a unified URL rewrite layer. The database is hosted on <strong>Supabase</strong> (managed PostgreSQL with pgvector). Note: Vercel serverless functions enforce a <strong>5MB maximum file upload size</strong> per request.
+    </p>
+  </div>
+
+  <!-- ======== 02 — TECH STACK ======== -->
+  <div class="section">
+    <div class="section-number">02 — Technology</div>
+    <h2>Tech Stack</h2>
+    <div class="stack-grid">
+      <div class="stack-card">
+        <div class="stack-card-title">Frontend</div>
+        <ul>
+          <li>Next.js 16 (App Router, React 19)</li>
+          <li>TypeScript</li>
+          <li>TailwindCSS v4</li>
+          <li>Radix UI Primitives</li>
+          <li>Lucide React Icons</li>
+          <li>Three.js / React Three Fiber</li>
+          <li>Recharts (data visualization)</li>
+          <li>Embla Carousel</li>
+        </ul>
+      </div>
+      <div class="stack-card">
+        <div class="stack-card-title">Backend</div>
+        <ul>
+          <li>Python FastAPI</li>
+          <li>SQLAlchemy 2.0 ORM</li>
+          <li>Pydantic v2 (validation)</li>
+          <li>bcrypt (password hashing)</li>
+          <li>python-jose (JWT auth)</li>
+          <li>pypdf &amp; python-docx (parsers)</li>
+        </ul>
+      </div>
+      <div class="stack-card">
+        <div class="stack-card-title">AI &amp; Search</div>
+        <ul>
+          <li>Google Gemini 2.5 Flash (LLM)</li>
+          <li>text-embedding-004 (768-dim vectors)</li>
+          <li>pgvector (cosine similarity search)</li>
+          <li>Hybrid ranking: text + semantic</li>
+        </ul>
+      </div>
+      <div class="stack-card">
+        <div class="stack-card-title">Infrastructure</div>
+        <ul>
+          <li>Vercel (serverless deployment)</li>
+          <li>Supabase PostgreSQL (with pgvector ext.)</li>
+          <li>NullPool connection strategy</li>
+          <li>sessionStorage caching</li>
+          <li>Vercel Analytics</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======== 03 — ARCHITECTURE ======== -->
+  <div class="section">
+    <div class="section-number">03 — Architecture</div>
+    <h2>System Architecture</h2>
+    <p>
+      OmniMind follows a <strong>monorepo architecture</strong> deployed on Vercel. The frontend is a Next.js 16 application using the App Router pattern, and the backend is a Python FastAPI application deployed as a Vercel Serverless Function. All API requests matching <code>/api/*</code> are rewritten to <code>/api/main.py</code> via the <code>vercel.json</code> configuration. The database is hosted on <strong>Supabase</strong> (managed PostgreSQL with the pgvector extension enabled).
+    </p>
+
+    <h3>Frontend Pages</h3>
+    <ul>
+      <li><strong>Landing Page</strong> (<code>/</code>): Marketing page with animated hero, features showcase, testimonials carousel, live metrics counters, pricing section, and responsive navigation with mobile menu overlay.</li>
+      <li><strong>Login / Signup</strong> (<code>/login</code>): Authentication page supporting email/password registration and login with JWT-based session management.</li>
+      <li><strong>Dashboard</strong> (<code>/dashboard</code>): Authenticated home featuring a personalized "For You" carousel, most-visited materials, recent uploads, contribution counter (X/10 limit), and a global search bar.</li>
+      <li><strong>Browse</strong> (<code>/browse</code>): Filterable material listing with sort options (Trending, Most Viewed, My Contributions, All), plus hybrid search integration.</li>
+      <li><strong>Material View</strong> (<code>/material/[id]</code>): Deep-dive page showing AI-generated summary, full content, tags, view count, original file download, and related materials.</li>
+      <li><strong>Upload</strong> (<code>/upload</code>): Drag-and-drop multi-file upload with per-file tag assignment, global "Apply Tag to All" injector, and real-time upload limit enforcement.</li>
+    </ul>
+
+    <h3>Backend Modules</h3>
+    <ul>
+      <li><strong>main.py</strong>: Core FastAPI application with all route handlers, category seeding, database auto-migration, and the "For You" topic generation algorithm.</li>
+      <li><strong>auth.py</strong>: JWT authentication module using bcrypt password hashing, HS256 token signing, and OAuth2 bearer token dependency injection.</li>
+      <li><strong>ai_service.py</strong>: AI processing module handling text extraction (PDF via pypdf, DOCX via python-docx, TXT/MD), content analysis via Gemini 2.5 Flash, and 768-dimensional embedding generation via text-embedding-004 with REST API fallback.</li>
+      <li><strong>models.py</strong>: SQLAlchemy ORM models for Users, Categories, Materials, MaterialViews, and SearchHistory.</li>
+      <li><strong>schemas.py</strong>: Pydantic v2 request/response schemas with email validation and ORM-compatible serialization.</li>
+      <li><strong>database.py</strong>: Supabase PostgreSQL engine configuration using NullPool strategy optimized for serverless execution environments.</li>
+    </ul>
+  </div>
+
+  <!-- ======== 04 — API ENDPOINTS ======== -->
+  <div class="section">
+    <div class="section-number">04 — API Reference</div>
+    <h2>API Endpoints</h2>
+
+    <h3>Authentication</h3>
+    <table class="endpoint-table">
+      <thead>
+        <tr><th>Method</th><th>Route</th><th>Description</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="method method-post">POST</span></td>
+          <td class="route">/api/auth/signup</td>
+          <td>Register a new user. Validates unique email &amp; username. Returns JWT token + user object.</td>
+        </tr>
+        <tr>
+          <td><span class="method method-post">POST</span></td>
+          <td class="route">/api/auth/login</td>
+          <td>Authenticate via username or email. Verifies bcrypt-hashed password. Returns JWT (7-day expiry).</td>
+        </tr>
+        <tr>
+          <td><span class="method method-get">GET</span></td>
+          <td class="route">/api/auth/user</td>
+          <td>Returns current authenticated user profile from JWT bearer token.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>Materials &amp; Upload</h3>
+    <table class="endpoint-table">
+      <thead>
+        <tr><th>Method</th><th>Route</th><th>Description</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="method method-post">POST</span></td>
+          <td class="route">/api/materials</td>
+          <td>Upload files (PDF, DOCX, TXT, MD). Enforces 10-doc limit per user. Extracts text, generates AI summary/tags/category via Gemini, creates 768-dim embedding for semantic search, stores original file bytes. Accepts per-file tags as a 2D JSON array.</td>
+        </tr>
+        <tr>
+          <td><span class="method method-get">GET</span></td>
+          <td class="route">/api/materials</td>
+          <td>List materials with sort (created_at/views), order (asc/desc), pagination (skip/limit), and user filter (mine=true).</td>
+        </tr>
+        <tr>
+          <td><span class="method method-get">GET</span></td>
+          <td class="route">/api/materials/{id}</td>
+          <td>Fetch single material with full content. Increments view counter and logs a MaterialView record.</td>
+        </tr>
+        <tr>
+          <td><span class="method method-delete">DELETE</span></td>
+          <td class="route">/api/materials/{id}</td>
+          <td>Delete a material. Ownership authorization enforced: only the uploader can delete. Cascades deletion to associated MaterialViews.</td>
+        </tr>
+        <tr>
+          <td><span class="method method-get">GET</span></td>
+          <td class="route">/api/materials/{id}/download/original</td>
+          <td>Download original uploaded file bytes. Supports inline preview mode via <code>?inline=true</code> query parameter.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>Browse &amp; Discovery</h3>
+    <table class="endpoint-table">
+      <thead>
+        <tr><th>Method</th><th>Route</th><th>Description</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="method method-get">GET</span></td>
+          <td class="route">/api/materials/browse/most-viewed</td>
+          <td>Returns top 10 materials ranked by view count (descending).</td>
+        </tr>
+        <tr>
+          <td><span class="method method-get">GET</span></td>
+          <td class="route">/api/materials/browse/all</td>
+          <td>Returns all materials with pagination, ordered by creation date.</td>
+        </tr>
+        <tr>
+          <td><span class="method method-get">GET</span></td>
+          <td class="route">/api/dashboard/stats</td>
+          <td>Returns personalized dashboard data: most visited materials, recent uploads, user contribution count, and AI-generated "For You" trending topics derived from global category views, user upload tags, and search history.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>Search</h3>
+    <table class="endpoint-table">
+      <thead>
+        <tr><th>Method</th><th>Route</th><th>Description</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="method method-get">GET</span></td>
+          <td class="route">/api/search?q={query}</td>
+          <td>Hybrid search engine. Logs the query for personalization, generates a query embedding, performs cosine-distance vector search via pgvector, simultaneously executes keyword search across title/summary/content, then merges results with text/title matches prioritized first. Falls back to pure text search if embedding generation fails.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ======== 05 — DATABASE SCHEMA ======== -->
+  <div class="section">
+    <div class="section-number">05 — Data Layer</div>
+    <h2>Database Schema</h2>
+    <p>Supabase-hosted PostgreSQL database with the <code>pgvector</code> extension enabled for 768-dimensional vector storage and cosine similarity operations.</p>
+
+    <div class="schema-block">
+      <div class="schema-name">users</div>
+      <div class="schema-cols">
+        <div class="schema-col"><span>id</span>: UUID (PK)</div>
+        <div class="schema-col"><span>username</span>: VARCHAR(50) UNIQUE</div>
+        <div class="schema-col"><span>email</span>: VARCHAR(100) UNIQUE</div>
+        <div class="schema-col"><span>password_hash</span>: VARCHAR(255)</div>
+        <div class="schema-col"><span>created_at</span>: TIMESTAMP</div>
+      </div>
+    </div>
+
+    <div class="schema-block">
+      <div class="schema-name">categories</div>
+      <div class="schema-cols">
+        <div class="schema-col"><span>id</span>: INTEGER (PK)</div>
+        <div class="schema-col"><span>name</span>: VARCHAR(100) UNIQUE</div>
+        <div class="schema-col"><span>slug</span>: VARCHAR(100) UNIQUE</div>
+        <div class="schema-col"><span>description</span>: TEXT</div>
+        <div class="schema-col"><span>color_code</span>: VARCHAR(20)</div>
+      </div>
+    </div>
+
+    <div class="schema-block">
+      <div class="schema-name">materials</div>
+      <div class="schema-cols">
+        <div class="schema-col"><span>id</span>: UUID (PK)</div>
+        <div class="schema-col"><span>user_id</span>: UUID (FK → users)</div>
+        <div class="schema-col"><span>category_id</span>: INT (FK → categories)</div>
+        <div class="schema-col"><span>title</span>: VARCHAR(255)</div>
+        <div class="schema-col"><span>content</span>: TEXT</div>
+        <div class="schema-col"><span>summary</span>: TEXT</div>
+        <div class="schema-col"><span>tags</span>: VARCHAR[] (array)</div>
+        <div class="schema-col"><span>views</span>: INTEGER</div>
+        <div class="schema-col"><span>embedding</span>: VECTOR(768)</div>
+        <div class="schema-col"><span>file_data</span>: BYTEA</div>
+        <div class="schema-col"><span>file_type</span>: VARCHAR(50)</div>
+        <div class="schema-col"><span>created_at</span>: TIMESTAMP</div>
+      </div>
+    </div>
+
+    <div class="schema-block">
+      <div class="schema-name">material_views</div>
+      <div class="schema-cols">
+        <div class="schema-col"><span>id</span>: UUID (PK)</div>
+        <div class="schema-col"><span>material_id</span>: UUID (FK → materials)</div>
+        <div class="schema-col"><span>user_id</span>: UUID (FK → users)</div>
+        <div class="schema-col"><span>viewed_at</span>: TIMESTAMP</div>
+      </div>
+    </div>
+
+    <div class="schema-block">
+      <div class="schema-name">search_history</div>
+      <div class="schema-cols">
+        <div class="schema-col"><span>id</span>: UUID (PK)</div>
+        <div class="schema-col"><span>user_id</span>: UUID (FK → users)</div>
+        <div class="schema-col"><span>query</span>: VARCHAR(500)</div>
+        <div class="schema-col"><span>searched_at</span>: TIMESTAMP</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======== 06 — KEY FEATURES ======== -->
+  <div class="section">
+    <div class="section-number">06 — Functionality</div>
+    <h2>Key Features In Depth</h2>
+
+    <h3>1. AI-Powered Document Processing Pipeline</h3>
+    <p>When a user uploads a file, the backend orchestrates a multi-stage processing pipeline:</p>
+    <ul>
+      <li><strong>Text Extraction:</strong> Files are parsed based on their extension: pypdf for PDFs, python-docx for Word documents, and UTF-8 decoding for plaintext/Markdown files.</li>
+      <li><strong>AI Analysis:</strong> The extracted text (capped at 10,000 characters) is sent to Gemini 2.5 Flash with a structured JSON prompt requesting a summary, up to 5 tags, and a category slug from a predefined taxonomy of 14 categories.</li>
+      <li><strong>Embedding Generation:</strong> A rich "Advanced Semantic Text" block is constructed by concatenating the file title, AI-generated tags, summary, and content. This composite string is embedded into a 768-dimensional vector via the <code>text-embedding-004</code> model, with a REST API fallback if the SDK fails.</li>
+      <li><strong>Tag Merging:</strong> User-provided manual tags (sent as a 2D JSON array for per-file granularity) are merged with AI-generated tags, with user tags taking priority and duplicates removed.</li>
+      <li><strong>Storage:</strong> The original file bytes are stored in the database alongside the processed metadata, enabling original file downloads.</li>
+    </ul>
+
+    <h3>2. Hybrid Semantic Search Engine</h3>
+    <p>The search endpoint implements a dual-path retrieval strategy:</p>
+    <ul>
+      <li><strong>Semantic Path:</strong> The query string is embedded into a 768-dim vector, then a cosine-distance search is executed against all material embeddings using pgvector's built-in operators. This finds conceptually related documents even without keyword overlap.</li>
+      <li><strong>Text Path:</strong> Simultaneously, a SQL <code>ILIKE</code> query searches across title, summary, and content columns for keyword matches. Results are ranked using a <code>CASE</code> expression: title matches rank first (priority 1), summary matches second (priority 2), and content matches third.</li>
+      <li><strong>Fusion:</strong> Text matches (higher precision) are placed first in the result set, followed by semantic matches (higher recall), with deduplication by material ID.</li>
+      <li><strong>Personalization:</strong> Every search query is logged to the <code>search_history</code> table, feeding into the "For You" recommendation engine.</li>
+    </ul>
+
+    <h3>3. Personalized "For You" Recommendation Engine</h3>
+    <p>The dashboard's recommendation carousel is powered by a three-source algorithm:</p>
+    <ul>
+      <li><strong>Source 1: Global Trends:</strong> Aggregates total view counts grouped by category, surfacing the most popular topic platform-wide.</li>
+      <li><strong>Source 2: User Upload Tags:</strong> Analyzes the authenticated user's uploaded materials, extracts tag frequency counts, and promotes the user's top 3 most-used tags as recommended topics.</li>
+      <li><strong>Source 3: Search History:</strong> Mines the user's recent search queries, tokenizes them, filters stop-words, and surfaces the most frequently searched keywords.</li>
+      <li><strong>Fallback:</strong> If insufficient data exists (new user), the system gracefully falls back to predefined default topics (AI &amp; Machine Learning, Data Science, Software Engineering).</li>
+    </ul>
+
+    <h3>4. Dashboard Performance Optimization</h3>
+    <ul>
+      <li><strong>Query Optimization:</strong> Dashboard queries use SQLAlchemy's <code>defer()</code> to exclude heavy columns (content, embedding, file_data) from listing queries, reducing payload sizes by ~95%.</li>
+      <li><strong>Client-Side Caching:</strong> Dashboard stats are cached in <code>sessionStorage</code> to prevent redundant API calls on navigation. The cache is invalidated on upload or deletion events.</li>
+      <li><strong>Connection Pooling:</strong> Uses SQLAlchemy's <code>NullPool</code> strategy to prevent connection exhaustion on Vercel's serverless infrastructure.</li>
+    </ul>
+
+    <h3>5. Upload Governance &amp; Per-File Tagging</h3>
+    <ul>
+      <li><strong>10-Document Limit:</strong> The backend counts existing materials per user before processing uploads. If the new batch would exceed 10, the request is rejected with a descriptive error message.</li>
+      <li><strong>Per-File Tags:</strong> The upload UI allows individual tag assignment per file. Tags are transmitted as a 2D JSON array (<code>[["tag1"], ["tag2", "tag3"]]</code>) mapped by index to each file.</li>
+      <li><strong>Global Tag Injector:</strong> When uploading 2+ files, an "Apply Tag to All Files" input appears, instantly broadcasting a tag into every file's tag list.</li>
+    </ul>
+
+    <h3>6. Security &amp; Authorization</h3>
+    <ul>
+      <li><strong>JWT Authentication:</strong> All protected endpoints use OAuth2 bearer tokens signed with HS256. Tokens expire after 7 days.</li>
+      <li><strong>Password Security:</strong> Passwords are hashed using bcrypt with auto-generated salts.</li>
+      <li><strong>Ownership Authorization:</strong> Material deletion verifies that the requesting user's ID matches the material's <code>user_id</code>. Unauthorized deletions return HTTP 403.</li>
+      <li><strong>Cascade Deletion:</strong> Deleting a material automatically removes all associated <code>MaterialView</code> records to prevent foreign key constraint violations.</li>
+    </ul>
+  </div>
+
+  <!-- ======== 07 — DEPLOYMENT ======== -->
+  <div class="section">
+    <div class="section-number">07 — Deployment</div>
+    <h2>Deployment Architecture</h2>
+    <ul>
+      <li><strong>Platform:</strong> Vercel (Serverless)</li>
+      <li><strong>Frontend:</strong> Next.js 16 app built and served via Vercel's Edge Network</li>
+      <li><strong>Backend:</strong> FastAPI Python application deployed as a Vercel Serverless Function via <code>@vercel/python</code> runtime</li>
+      <li><strong>Routing:</strong> Vercel rewrites proxy all <code>/api/*</code> requests to <code>/api/main.py</code></li>
+      <li><strong>Database:</strong> Supabase managed PostgreSQL instance with pgvector extension</li>
+      <li><strong>Environment Variables:</strong> <code>DATABASE_URL</code>, <code>JWT_SECRET</code>, <code>GEMINI_API_KEY</code></li>
+      <li><strong>Package Manager:</strong> pnpm with <code>--no-frozen-lockfile</code> install strategy</li>
+      <li><strong>Limitation:</strong> Vercel serverless functions enforce a <strong>5MB maximum file upload size</strong> per request. Files exceeding this limit will be rejected at the infrastructure level before reaching the application code.</li>
+    </ul>
+  </div>
+
+</div>
+
+</body>
+</html>
