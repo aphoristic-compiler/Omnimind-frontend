@@ -42,7 +42,7 @@ def analyze_content(filename: str, extracted_text: str) -> dict:
     try:
         url = "https://api.cohere.com/v1/chat"
         payload = {
-            "model": "command-r-plus",
+            "model": "command-r-plus-08-2024",
             "message": prompt,
             "temperature": 0.2,
             "response_format": {"type": "json_object"}
