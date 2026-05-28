@@ -1,13 +1,20 @@
 import os
 from dotenv import load_dotenv
 
-# Try to load .env from the root directory or api directory
-load_dotenv(os.path.join(os.path.dirname(__file__), "..", ".env"))
-load_dotenv(os.path.join(os.path.dirname(__file__), "..", ".env.local"))
-load_dotenv()
+# Try to load .env from the root directory or api directory securely
+base_dir = os.path.abspath(os.path.dirname(__file__))
+load_dotenv(os.path.join(base_dir, "..", ".env"))
+load_dotenv(os.path.join(base_dir, "..", ".env.local"))
+load_dotenv(os.path.join(base_dir, ".env"))
 
-from database import engine, Base
-import models
+# Fallback: if it still can't find it, ask you to paste it!
+if not os.getenv("DATABASE_URL"):
+    print("\nCould not automatically find your .env file!")
+    db_url = input("Please paste your Supabase DATABASE_URL here:\n> ")
+    os.environ["DATABASE_URL"] = db_url.strip()
+
+from .database import engine, Base
+from . import models
 
 def reset_database():
     print("=========================================")
