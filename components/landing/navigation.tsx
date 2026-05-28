@@ -62,14 +62,13 @@ export function Navigation() {
             ))}
           </div>
 
-          {/* Desktop CTA */}
-          <div className="hidden md:flex items-center gap-4">
-            <a href="/login" className={`text-foreground/70 hover:text-foreground transition-all duration-500 ${isScrolled ? "text-xs" : "text-sm"}`}>
+          {/* CTA & Mobile Menu Button */}
+          <div className="flex items-center gap-4">
+            <a href="/login" className={`text-foreground/70 hover:text-foreground transition-all duration-500 ${isScrolled ? "text-xs md:text-xs" : "text-sm md:text-sm"}`}>
               Sign in
             </a>
-          </div>
 
-          {/* Mobile Menu Button */}
+            {/* Mobile Menu Button */}
           <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             className="md:hidden p-2"

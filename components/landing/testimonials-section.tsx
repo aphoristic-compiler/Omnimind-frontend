@@ -4,32 +4,32 @@ import { useEffect, useState } from "react";
 
 const testimonials = [
   {
-    quote: "Optimus transformed our deployment pipeline. What used to take hours now happens in seconds.",
+    quote: "OmniMind completely changed how I manage my research. The semantic search finds the exact paragraphs I need instantly.",
     author: "Sarah Chen",
-    role: "CTO",
-    company: "Meridian Labs",
-    metric: "10x faster deployments",
+    role: "Lead Researcher",
+    company: "Stanford AI Lab",
+    metric: "20+ hours saved/wk",
   },
   {
-    quote: "The developer experience is unmatched. Our team's productivity has never been higher.",
+    quote: "Uploading dozens of PDFs and having them automatically categorized and summarized by AI has been magical.",
     author: "Marcus Webb",
-    role: "Engineering Lead",
-    company: "Flux Systems",
-    metric: "40% more features shipped",
+    role: "Data Scientist",
+    company: "DataMind Labs",
+    metric: "100s of PDFs analyzed",
   },
   {
-    quote: "Finally, infrastructure that scales with our ambition. Zero downtime since we switched.",
+    quote: "The For You dashboard feels like magic. It always surfaces exactly the reference material I need for my current project.",
     author: "Elena Rodriguez",
-    role: "VP Engineering",
-    company: "Beacon AI",
-    metric: "99.99% uptime",
+    role: "UX Researcher",
+    company: "Creative Studio",
+    metric: "Instant insight discovery",
   },
   {
-    quote: "The integrations are seamless. We connected our entire stack in a single afternoon.",
+    quote: "We migrated our entire team's knowledge base to OmniMind. The hybrid search means we never lose a document again.",
     author: "James Liu",
-    role: "Founder",
-    company: "Prism Analytics",
-    metric: "50+ integrations used",
+    role: "Engineering Manager",
+    company: "Global Tech",
+    metric: "Zero lost documents",
   },
 ];
 
@@ -148,7 +148,7 @@ export function TestimonialsSection() {
         <div className="flex gap-16 items-center marquee">
           {[...Array(2)].map((_, setIdx) => (
             <div key={setIdx} className="flex gap-16 items-center shrink-0">
-              {["Meridian Labs", "Flux Systems", "Beacon AI", "Prism Analytics", "Nova Tech", "Quantum Corp", "Atlas Digital", "Vertex Labs"].map(
+              {["Stanford AI Lab", "DataMind Labs", "Creative Studio", "Global Tech", "Nova Research", "Quantum Corp", "Atlas Digital", "Vertex Labs"].map(
                 (company) => (
                   <span
                     key={`${setIdx}-${company}`}
