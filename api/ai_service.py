@@ -3,11 +3,10 @@ import json
 import io
 import pypdf
 import docx
-from google import genai
-from google.genai import types
+import urllib.request
+import urllib.error
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-client = genai.Client(api_key=GEMINI_API_KEY) if GEMINI_API_KEY else None
 
 def extract_text_from_file(filename: str, file_bytes: bytes) -> str:
     text = ""
@@ -24,11 +23,12 @@ def extract_text_from_file(filename: str, file_bytes: bytes) -> str:
         elif filename.endswith((".txt", ".md")):
             text = file_bytes.decode("utf-8")
     except Exception as e:
-        print(f"Error parsing {filename}: {e}")
+        print(f"Error parsing {filename}: {e}", flush=True)
     return text.strip()
 
 def analyze_content(filename: str, extracted_text: str) -> dict:
-    if not client: return {"category_slug": "general", "summary": "No AI key provided.", "tags": []}
+    if not GEMINI_API_KEY:
+        return {"category_slug": "general", "summary": "No AI key provided.", "tags": []}
     
     prompt = f"""
     Analyze the text from '{filename}'.
@@ -38,41 +38,53 @@ def analyze_content(filename: str, extracted_text: str) -> dict:
     Output strict JSON: {{"category_slug": "slug", "summary": "text", "tags": ["tag"]}}
     Text: {extracted_text[:10000]}
     """
+    
     try:
-        response = client.models.generate_content(
-            model='gemini-2.5-flash',
-            contents=prompt,
-            config=types.GenerateContentConfig(response_mime_type="application/json", temperature=0.2),
-        )
-        return json.loads(response.text)
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={GEMINI_API_KEY}"
+        payload = {
+            "contents": [{"parts": [{"text": prompt}]}],
+            "generationConfig": {
+                "responseMimeType": "application/json",
+                "temperature": 0.2
+            }
+        }
+        data = json.dumps(payload).encode("utf-8")
+        req = urllib.request.Request(url, data=data, headers={"Content-Type": "application/json"})
+        
+        with urllib.request.urlopen(req) as response:
+            res_data = json.loads(response.read().decode())
+            text_response = res_data["candidates"][0]["content"]["parts"][0]["text"]
+            return json.loads(text_response)
+            
+    except urllib.error.HTTPError as e:
+        error_msg = e.read().decode()
+        print(f"AI REST Error: {e.code} - {error_msg}", flush=True)
     except Exception as e:
-        print(f"AI error: {e}")
-        return {"category_slug": "general", "summary": "Analysis failed.", "tags": []}
+        print(f"AI unexpected error: {e}", flush=True)
+        
+    return {"category_slug": "general", "summary": "Analysis failed.", "tags": []}
 
 def generate_embedding(text: str) -> list[float]:
-    if not GEMINI_API_KEY: return [0.0] * 768
+    if not GEMINI_API_KEY: 
+        return [0.0] * 768
+        
     try:
-        if client:
-            result = client.models.embed_content(model="text-embedding-004", contents=text[:5000])
-            if hasattr(result, 'embeddings') and result.embeddings:
-                return result.embeddings[0].values
-            elif isinstance(result, dict) and 'embedding' in result:
-                return result['embedding']
-    except Exception as e:
-        print(f"SDK Embedding error: {e}")
-    
-    # Fallback to REST API
-    try:
-        import urllib.request
-        import json
         url = f"https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key={GEMINI_API_KEY}"
-        data = json.dumps({"model": "models/text-embedding-004", "content": {"parts": [{"text": text[:5000]}]}})
-        req = urllib.request.Request(url, data=data.encode("utf-8"), headers={"Content-Type": "application/json"})
+        payload = {
+            "content": {"parts": [{"text": text[:5000]}]}
+        }
+        data = json.dumps(payload).encode("utf-8")
+        req = urllib.request.Request(url, data=data, headers={"Content-Type": "application/json"})
+        
         with urllib.request.urlopen(req) as response:
-            res = json.loads(response.read().decode())
-            if "embedding" in res and "values" in res["embedding"]:
-                return res["embedding"]["values"]
+            res_data = json.loads(response.read().decode())
+            if "embedding" in res_data and "values" in res_data["embedding"]:
+                return res_data["embedding"]["values"]
+                
+    except urllib.error.HTTPError as e:
+        error_msg = e.read().decode()
+        print(f"Embedding REST Error: {e.code} - {error_msg}", flush=True)
     except Exception as e:
-        print(f"REST API Embedding error: {e}")
+        print(f"Embedding unexpected error: {e}", flush=True)
         
     return [0.0] * 768
