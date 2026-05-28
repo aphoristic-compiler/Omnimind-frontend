@@ -313,7 +313,7 @@ export default function MaterialPage() {
             {/* Header card */}
             <div className="bg-card border border-border rounded-2xl p-8 mb-8">
               <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
-                <div className="flex-1">
+                <div className="flex-1 min-w-0">
                   {/* Tags */}
                   {material.tags && material.tags.length > 0 && (
                     <div className="flex flex-wrap gap-2 mb-4">
@@ -329,7 +329,7 @@ export default function MaterialPage() {
                     </div>
                   )}
 
-                  <h1 className="text-3xl lg:text-4xl font-display text-card-foreground leading-tight mb-4 break-words">
+                  <h1 className="text-3xl lg:text-4xl font-display text-card-foreground leading-tight mb-4 break-all sm:break-words">
                     {material.title}
                   </h1>
 
