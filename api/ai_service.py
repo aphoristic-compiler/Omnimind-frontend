@@ -32,7 +32,7 @@ def analyze_content(filename: str, extracted_text: str) -> dict:
     
     prompt = f"""
     Analyze the text from '{filename}'.
-    1. Write a 1-2 sentence summary.
+    1. Write a deep 3-5 sentence summary that goes beyond a literal description. Capture the underlying context, core arguments, symbolic meaning, and overarching themes of the text.
     2. Generate up to 5 tags.
     3. Categorize into exactly one of these slugs: 'ai-machine-learning', 'data-science', 'software-engineering', 'mathematics', 'physics', 'chemistry', 'biology', 'engineering', 'business', 'literature-arts', 'history-social-sciences', 'medicine-health', 'economics', 'general'.
     Output strict JSON: {{"category_slug": "slug", "summary": "text", "tags": ["tag"]}}
