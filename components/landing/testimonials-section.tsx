@@ -144,7 +144,7 @@ export function TestimonialsSection() {
       </div>
       
       {/* Full-width marquee outside container */}
-      <div className="w-full">
+      <div className="w-full overflow-hidden">
         <div className="flex gap-16 items-center marquee">
           {[...Array(2)].map((_, setIdx) => (
             <div key={setIdx} className="flex gap-16 items-center shrink-0">
