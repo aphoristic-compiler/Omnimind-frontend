@@ -31,7 +31,7 @@ class Material(Base):
     summary = Column(Text, nullable=True)
     tags = Column(ARRAY(String), default=list)
     views = Column(Integer, default=0)
-    embedding = Column(Vector(768))
+    embedding = Column(Vector(1024))
     file_data = Column(LargeBinary, nullable=True)   # original file bytes
     file_type = Column(String(50), nullable=True)     # e.g. 'application/pdf'
     created_at = Column(DateTime, default=datetime.utcnow)

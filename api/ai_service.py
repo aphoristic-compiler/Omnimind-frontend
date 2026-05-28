@@ -6,7 +6,7 @@ import docx
 import urllib.request
 import urllib.error
 
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+COHERE_API_KEY = os.getenv("COHERE_API_KEY")
 
 def extract_text_from_file(filename: str, file_bytes: bytes) -> str:
     text = ""
@@ -27,7 +27,7 @@ def extract_text_from_file(filename: str, file_bytes: bytes) -> str:
     return text.strip()
 
 def analyze_content(filename: str, extracted_text: str) -> dict:
-    if not GEMINI_API_KEY:
+    if not COHERE_API_KEY:
         return {"category_slug": "general", "summary": "No AI key provided.", "tags": []}
     
     prompt = f"""
@@ -40,22 +40,26 @@ def analyze_content(filename: str, extracted_text: str) -> dict:
     """
     
     try:
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={GEMINI_API_KEY}"
+        url = "https://api.cohere.com/v1/chat"
         payload = {
-            "contents": [{"parts": [{"text": prompt}]}],
-            "generationConfig": {
-                "responseMimeType": "application/json",
-                "temperature": 0.2
-            }
+            "model": "command-r-plus",
+            "message": prompt,
+            "temperature": 0.2,
+            "response_format": {"type": "json_object"}
+        }
+        headers = {
+            "Authorization": f"Bearer {COHERE_API_KEY}",
+            "Content-Type": "application/json",
+            "Accept": "application/json"
         }
         data = json.dumps(payload).encode("utf-8")
-        req = urllib.request.Request(url, data=data, headers={"Content-Type": "application/json"})
+        req = urllib.request.Request(url, data=data, headers=headers)
         
         with urllib.request.urlopen(req) as response:
             res_data = json.loads(response.read().decode())
-            text_response = res_data["candidates"][0]["content"]["parts"][0]["text"]
+            text_response = res_data.get("text", "")
             
-            # Clean potential markdown JSON fences returned by the model
+            # Clean potential markdown JSON fences
             text_response = text_response.strip()
             if text_response.startswith("```json"): text_response = text_response[7:]
             elif text_response.startswith("```"): text_response = text_response[3:]
@@ -66,34 +70,41 @@ def analyze_content(filename: str, extracted_text: str) -> dict:
             
     except urllib.error.HTTPError as e:
         error_msg = e.read().decode()
-        print(f"AI REST Error: {e.code} - {error_msg}", flush=True)
+        print(f"Cohere REST Error: {e.code} - {error_msg}", flush=True)
     except Exception as e:
-        print(f"AI unexpected error: {e}", flush=True)
+        print(f"Cohere unexpected error: {e}", flush=True)
         
     return {"category_slug": "general", "summary": "Analysis failed.", "tags": []}
 
 def generate_embedding(text: str) -> list[float]:
-    if not GEMINI_API_KEY: 
-        return [0.0] * 768
+    if not COHERE_API_KEY: 
+        return [0.0] * 1024
         
     try:
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key={GEMINI_API_KEY}"
+        url = "https://api.cohere.com/v1/embed"
         payload = {
-            "model": "models/text-embedding-004",
-            "content": {"parts": [{"text": text[:5000]}]}
+            "model": "embed-english-v3.0",
+            "texts": [text[:5000]],
+            "input_type": "search_document"
+        }
+        headers = {
+            "Authorization": f"Bearer {COHERE_API_KEY}",
+            "Content-Type": "application/json",
+            "Accept": "application/json"
         }
         data = json.dumps(payload).encode("utf-8")
-        req = urllib.request.Request(url, data=data, headers={"Content-Type": "application/json"})
+        req = urllib.request.Request(url, data=data, headers=headers)
         
         with urllib.request.urlopen(req) as response:
             res_data = json.loads(response.read().decode())
-            if "embedding" in res_data and "values" in res_data["embedding"]:
-                return res_data["embedding"]["values"]
+            embeddings = res_data.get("embeddings", [])
+            if embeddings and len(embeddings) > 0:
+                return embeddings[0]
                 
     except urllib.error.HTTPError as e:
         error_msg = e.read().decode()
-        print(f"Embedding REST Error: {e.code} - {error_msg}", flush=True)
+        print(f"Cohere Embed REST Error: {e.code} - {error_msg}", flush=True)
     except Exception as e:
-        print(f"Embedding unexpected error: {e}", flush=True)
+        print(f"Cohere Embed unexpected error: {e}", flush=True)
         
-    return [0.0] * 768
+    return [0.0] * 1024
